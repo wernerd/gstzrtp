@@ -113,4 +113,5 @@ endif()
 # set (GST_PLUGIN_LDFLAGS "-module -avoid-version -export-symbols-regex [_]*\\(gst_\\|Gst\\|GST_\\).*")
 
 add_subdirectory(src)
+add_subdirectory(demo)
 

@@ -107,7 +107,7 @@ struct _GstZrtpFilter
     guint32 peerSSRC;       /* stored in host order */
     guint32 localSSRC;      /* stored in host order */
     gchar* clientIdString;
-//    zrtp_UserCallbacks* userCallback;
+    gchar* cacheName;
     ZrtpContext* zrtpCtx;
     guint16 zrtpSeq;
     gboolean enableZrtp;
@@ -122,6 +122,19 @@ struct _GstZrtpFilter
 struct _GstZrtpFilterClass
 {
     GstElementClass parent_class;
+
+    /*< public >*/
+    /* signals */
+    void (*sendInfo)(GstElement *element, gint severity, gint subcode);
+    void (*sas)(GstElement *element, gchar* sas, gint verified);
+    void (*algorithm)(GstElement *element, gchar* algo);
+    void (*secureOff)(GstElement *element);
+    void (*negotiation)(GstElement *element, gint severity, gint subcode);
+    void (*noSupport)(GstElement *element);
+    void (*askEnroll)(GstElement *element, gint info);
+    void (*informEnroll)(GstElement *element, gint info);
+    void (*signSas)(GstElement *element, gchar* sasSign);
+    void (*checkSasSign)(GstElement *element, gchar* checkSign);
 };
 
 GType gst_zrtp_filter_get_type (void);

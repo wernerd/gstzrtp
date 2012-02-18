@@ -319,7 +319,6 @@ int32_t zsrtp_unprotectCtrl(ZsrtpContextCtrl* ctx, GstBuffer* gstBuf)
     guint32 ssrc = *(reinterpret_cast<guint32*>(GST_BUFFER_DATA(gstBuf) + 4)); // always SSRC of sender
     ssrc = g_ntohl(ssrc);
 
-    g_print("rtcp unprotect: ssrc: %x\n", ssrc);
     // Decrypt the content, exclude the very first SRTCP header (fixed, 8 bytes)
     if (encIndex & 0x80000000)
         pcc->srtcpEncrypt(GST_BUFFER_DATA(gstBuf) + 8,
