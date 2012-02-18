@@ -67,7 +67,7 @@
  * <title>Example launch line</title>
  * |[
  * gst-launch --gst-plugin-path=$HOME/devhome/gstZrtp/build/src -m \
- *   zrtpfilter name=zrtp \
+ *   zrtpfilter name=zrtp cache-name=gstZrtpCache.dat initialize=true \
  *   udpsrc port=5004 ! zrtp.recv_rtp_sink zrtp.recv_rtp_src ! \
  *       fakesink dump=true sync=false async=false \
  *   udpsrc port=5005 ! zrtp.recv_rtcp_sink zrtp.recv_rtcp_src ! \
@@ -210,7 +210,7 @@ static gboolean zrtp_initialize(GstZrtpFilter* filter, const gchar *zidFilename,
 static void zrtp_filter_startZrtp(GstZrtpFilter *zrtp);
 static void zrtp_filter_stopZrtp(GstZrtpFilter *zrtp);
 
-/* Forward declaration of thethe ZRTP specific callback functions that this
+/* Forward declaration of the ZRTP specific callback functions that this
    adapter must implement */
 static int32_t zrtp_sendDataZRTP(ZrtpContext* ctx, const uint8_t* data, int32_t length) ;
 static int32_t zrtp_activateTimer(ZrtpContext* ctx, int32_t time) ;
@@ -254,8 +254,8 @@ static guint gst_zrtp_filter_signals[LAST_SIGNAL] = { 0 };
 
 /* Marshalls two gint to application signal callback */
 static void
-marshal_status_VOID__MINIOBJECT_OBJECT (GClosure * closure, GValue * return_value,
-    guint n_param_values, const GValue * param_values, gpointer invocation_hint,
+marshal_VOID__INT_INT (GClosure * closure, GValue * return_value,
+    guint n_param_values, const GValue* param_values, gpointer invocation_hint,
     gpointer marshal_data)
 {
   typedef void (*marshalfunc_VOID__MINIOBJECT_OBJECT) (gpointer obj, gint arg1, gint arg2, gpointer data2);
@@ -280,7 +280,7 @@ marshal_status_VOID__MINIOBJECT_OBJECT (GClosure * closure, GValue * return_valu
 
 /* Marshalls one gchar* and one gint to application signal callback */
 static void
-marshal_sas_VOID__MINIOBJECT_OBJECT (GClosure * closure, GValue * return_value,
+marshal_VOID__STRING_INT (GClosure * closure, GValue * return_value,
     guint n_param_values, const GValue * param_values, gpointer invocation_hint,
     gpointer marshal_data)
 {
@@ -333,10 +333,10 @@ static void
 gst_zrtp_filter_class_init (GstZrtpFilterClass * klass)
 {
     GObjectClass *gobject_class;
-    GstElementClass *gstelement_class;
+//    GstElementClass *gstelement_class;
 
     gobject_class = (GObjectClass *) klass;
-    gstelement_class = (GstElementClass *) klass;
+//    gstelement_class = (GstElementClass *) klass;
 
     gobject_class->finalize = gst_zrtp_filter_finalize;
     gobject_class->set_property = gst_zrtp_filter_set_property;
@@ -381,7 +381,7 @@ gst_zrtp_filter_class_init (GstZrtpFilterClass * klass)
   gst_zrtp_filter_signals[SIGNAL_STATUS] =
       g_signal_new ("status", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
       G_STRUCT_OFFSET (GstZrtpFilterClass, sendInfo), NULL, NULL,
-      marshal_status_VOID__MINIOBJECT_OBJECT, G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
+      marshal_VOID__INT_INT, G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
 
   /**
    * zrtpfilter::sas:
@@ -394,7 +394,7 @@ gst_zrtp_filter_class_init (GstZrtpFilterClass * klass)
   gst_zrtp_filter_signals[SIGNAL_SAS] =
       g_signal_new ("sas", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
       G_STRUCT_OFFSET (GstZrtpFilterClass, sas), NULL, NULL,
-      marshal_sas_VOID__MINIOBJECT_OBJECT, G_TYPE_NONE, 2, G_TYPE_STRING, G_TYPE_INT);
+      marshal_VOID__STRING_INT, G_TYPE_NONE, 2, G_TYPE_STRING, G_TYPE_INT);
 
   /**
    * zrtpfilter::algorithm:
@@ -430,7 +430,7 @@ gst_zrtp_filter_class_init (GstZrtpFilterClass * klass)
   gst_zrtp_filter_signals[SIGNAL_NEGOTIATION] =
       g_signal_new("negotiation", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
       G_STRUCT_OFFSET(GstZrtpFilterClass, negotiation), NULL, NULL,
-      marshal_status_VOID__MINIOBJECT_OBJECT, G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
+      marshal_VOID__INT_INT, G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
 
   /**
    * zrtpfilter::not-support:
@@ -438,7 +438,7 @@ gst_zrtp_filter_class_init (GstZrtpFilterClass * klass)
    *
    * This signal gets emitted when ZRTP calls not supported callback.
    */
-  gst_zrtp_filter_signals[SIGNAL_SECURITY_OFF] =
+  gst_zrtp_filter_signals[SIGNAL_NOT_SUPP] =
       g_signal_new("not-supported", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
       G_STRUCT_OFFSET (GstZrtpFilterClass, noSupport), NULL, NULL,
       g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
@@ -647,7 +647,7 @@ gst_zrtp_filter_finalize (GObject* object)
 static gboolean
 gst_zrtp_filter_set_caps (GstPad * pad, GstCaps * caps)
 {
-    GstZrtpFilter *filter;
+//    GstZrtpFilter *filter;
 //     GstPad *otherpad;
 // 
 //     filter = GST_ZRTPFILTER (gst_pad_get_parent (pad));
@@ -903,23 +903,14 @@ void zrtp_filter_stopZrtp(GstZrtpFilter *zrtp)
     zrtp->zrtpCtx = NULL;
     zrtp->started = 0;
     zrtp->enableZrtp = FALSE;
-    if (zrtp->cacheName != NULL)
-        g_free(zrtp->cacheName);
+    g_free(zrtp->cacheName);
+
     GST_ZRTP_LOCK(zrtp);                /* Just to make sure no other thread has it */
     GST_ZRTP_UNLOCK(zrtp);
     g_mutex_free (zrtp->zrtpMutex);
     g_object_unref(zrtp->sysclock);
 }
-/*
 
-PJ_DECL(ZrtpContext*) pjmedia_transport_zrtp_getZrtpContext(pjmedia_transport *tp)
-{
-    struct tp_zrtp *zrtp = (struct tp_zrtp*)tp;
-    PJ_ASSERT_RETURN(tp, NULL);
-
-    return zrtp->zrtpCtx;
-}
-*/
 static
 gboolean timer_callback(GstClock *clock, GstClockTime time,
                         GstClockID id, gpointer userData)
@@ -1247,7 +1238,7 @@ static
 void zrtp_zrtpNegotiationFailed(ZrtpContext* ctx, int32_t severity, int32_t subCode)
 {
     GstZrtpFilter *zrtp = GST_ZRTPFILTER (ctx->userData);
-
+    g_print("negotiation fail\n");
     g_signal_emit (zrtp, gst_zrtp_filter_signals[SIGNAL_NEGOTIATION], 0, severity, subCode);
 }
 
@@ -1297,26 +1288,17 @@ static
 void zrtp_signSAS(ZrtpContext* ctx, char* sas)
 {
 //     GstZrtpFilter *zrtp = GST_ZRTPFILTER (ctx->userData);
-// 
+//
 //     g_print ("signSAS: sas: %s\n", sas);
-// 
-//     if (zrtp->userCallback != NULL)
-//     {
-//         zrtp->userCallback->zrtp_signSAS(zrtp->userCallback->userData, sas);
-//     }
+//
 }
 
 static
 gint32 zrtp_checkSASSignature(ZrtpContext* ctx, char* sas)
 {
 //     GstZrtpFilter *zrtp = GST_ZRTPFILTER (ctx->userData);
-// 
+//
 //     g_print ("checkAsaSignature: sas: %s\n", sas);
-
-//     if (zrtp->userCallback != NULL)
-//     {
-//         return zrtp->userCallback->zrtp_checkSASSignature(zrtp->userCallback->userData, sas);
-//     }
     return 0;
 }
 

@@ -259,7 +259,6 @@ int32_t zsrtp_protectCtrl(ZsrtpContextCtrl* ctx, GstBuffer* gstBuf)
     guint32 ssrc = *(reinterpret_cast<guint32*>(data + 4)); // always SSRC of sender
     ssrc = g_ntohl(ssrc);
 
-    g_print("rtcp protect: ssrc: %x\n", ssrc);
     /* Encrypt the packet */
     pcc->srtcpEncrypt(GST_BUFFER_DATA(gstBuf) + 8, length - 8, ctx->srtcpIndex, ssrc);
 
