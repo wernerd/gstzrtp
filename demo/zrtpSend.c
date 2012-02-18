@@ -7,9 +7,9 @@
  * only pipeline. Even if it is a receive-only RTP this program also sets
  * up a UDP sink and connects it to the other test program. The ZRTP protocol
  * needs a sender and receiver to run the key neotiation protocol.
- * 
+ *
  * In GStreamer gst-launch pipe notation:
- * 
+ *
  * gst-launch - zrtpfilter name=zrtp cache-name=gstZrtpCache.dat local-ssrc=0xdeadbeef initialize=true \
  *    udpsrc port=5002 ! zrtp.recv_rtp_sink zrtp.recv_rtp_src ! fakesink dump=true sync=false async=false \
  *    udpsrc port=5003 ! zrtp.recv_rtcp_sink zrtp.recv_rtcp_src ! fakesink dump=true sync=false async=false \
@@ -114,7 +114,7 @@ enum zrtp_MessageSeverity {
 };
 
 
- 
+
 static void
 zrtp_statusInfo (GstElement *element, gint severity, gint subCode, gpointer data)  {
     switch (severity) {
@@ -172,8 +172,9 @@ main (int   argc,
     GMainLoop *loop;
 
     GstElement *rtpPipe,
-                *udpRtpRecv, *udpRtcpRecv, *udpRtpSend,
-                *zrtp, *sinkRtp, *sinkRtcp;
+                *udpRtpRecv, *udpRtcpRecv, *udpRtpSend, *udpRtcpSend,
+                *zrtp, *sinkRtp, *sinkRtcp,
+                *tstSrc;
     GstBus *bus;
 
     /* Initialisation */
@@ -186,29 +187,39 @@ main (int   argc,
 
     udpRtpRecv  = gst_element_factory_make("udpsrc", "udp-rtp-recv");
     udpRtcpRecv = gst_element_factory_make("udpsrc", "udp-rtcp-recv");
+
     udpRtpSend  = gst_element_factory_make("udpsink", "udp-rtp-send");
+    udpRtcpSend = gst_element_factory_make("udpsink", "udp-rtcp-send");
 
     zrtp        = gst_element_factory_make("zrtpfilter", "ZRTP");
 
     sinkRtp     = gst_element_factory_make("fakesink", "rtp-sink");
     sinkRtcp    = gst_element_factory_make("fakesink", "rtcp-sink");
 
-    if (!rtpPipe || !udpRtpRecv || !udpRtcpRecv || !udpRtpSend || !zrtp || !sinkRtp || !sinkRtcp) {
+    tstSrc      = gst_element_factory_make("zrtptester", "testsrc");
+
+    if (!rtpPipe || !udpRtpRecv || !udpRtcpRecv || !udpRtpSend || !zrtp || !sinkRtp || !sinkRtcp ||
+        !tstSrc) {
         g_printerr ("One element could not be created. Exiting.\n");
         return -1;
     }
 
 
     /* Setup for RTP and RTCP receiver, even port is RTP, odd port is RTCP */
-    g_object_set(G_OBJECT(udpRtpRecv), "port", 5002, NULL);
-    g_object_set(G_OBJECT(udpRtcpRecv), "port", 5003, NULL);
+    g_object_set(G_OBJECT(udpRtpRecv), "port", 5004, NULL);
+    g_object_set(G_OBJECT(udpRtcpRecv), "port", 5005, NULL);
 
-    /* UDP sink sends to loclhost, port 5002 */
-    g_object_set(G_OBJECT(udpRtpSend), "clients", "127.0.0.1:5004", NULL);
+    /* UDP sink sends RTP to loclhost, port 5002 */
+    g_object_set(G_OBJECT(udpRtpSend), "clients", "127.0.0.1:5002", NULL);
     g_object_set(G_OBJECT(udpRtpSend), "sync", FALSE, NULL);
     g_object_set(G_OBJECT(udpRtpSend), "async", FALSE, NULL);
 
-    /* Setup the RTP and RTCP sinks after the ZRTP filter */
+    /* UDP sink sends RTCP to loclhost, port 5003 */
+    g_object_set(G_OBJECT(udpRtcpSend), "clients", "127.0.0.1:5003", NULL);
+    g_object_set(G_OBJECT(udpRtcpSend), "sync", FALSE, NULL);
+    g_object_set(G_OBJECT(udpRtcpSend), "async", FALSE, NULL);
+
+    /* Setup the RTP and RTCP sinks (fakesinks) after the ZRTP filter */
     g_object_set(G_OBJECT(sinkRtp), "sync", FALSE, NULL);
     g_object_set(G_OBJECT(sinkRtp), "async", FALSE, NULL);
     g_object_set(G_OBJECT(sinkRtp), "dump", TRUE, NULL);
@@ -222,8 +233,8 @@ main (int   argc,
      * SSRC data. Therefore set a local SSRC. For this demo program this is a fixed
      * value (0xdeadbeef), for real applications this should be a 32 bit random value.
      */
-    g_object_set(G_OBJECT(zrtp), "cache-name", "gstZrtpCache.dat", NULL);
-    g_object_set(G_OBJECT(zrtp), "local-ssrc", 0xdeadbeef, NULL);
+    g_object_set(G_OBJECT(zrtp), "cache-name", "gstZrtpCacheSend.dat", NULL);
+//    g_object_set(G_OBJECT(zrtp), "local-ssrc", 0xdeadbeef, NULL);
     g_object_set(G_OBJECT(zrtp), "initialize", TRUE, NULL);
 
     /* we add a message handler */
@@ -232,8 +243,9 @@ main (int   argc,
     gst_object_unref(bus);
 
     /* Set up the pipeline, we add all elements into the pipeline */
-    gst_bin_add_many(GST_BIN(rtpPipe), udpRtpRecv, udpRtcpRecv, zrtp, sinkRtp, sinkRtcp, udpRtpSend, NULL);
- 
+    gst_bin_add_many(GST_BIN(rtpPipe), udpRtpRecv, udpRtcpRecv, zrtp, sinkRtp, sinkRtcp, udpRtpSend,
+                     udpRtcpSend, tstSrc, NULL);
+
     /* setup the RTP and RTCP receiver and the sender for ZRTP communication */
     gst_element_link_pads(udpRtpRecv, "src", zrtp, "recv_rtp_sink");
     gst_element_link_pads(zrtp, "recv_rtp_src", sinkRtp, "sink");
@@ -241,8 +253,11 @@ main (int   argc,
     gst_element_link_pads(udpRtcpRecv, "src", zrtp, "recv_rtcp_sink");
     gst_element_link_pads(zrtp, "recv_rtcp_src", sinkRtcp, "sink");
 
+    gst_element_link_pads(tstSrc, "src", zrtp, "send_rtp_sink");
     gst_element_link_pads(zrtp, "send_rtp_src", udpRtpSend, "sink");
 
+    gst_element_link_pads(tstSrc, "rtcp_src", zrtp, "send_rtcp_sink");
+    gst_element_link_pads(zrtp, "send_rtcp_src", udpRtcpSend, "sink");
 
 
     /* Connect the ZRTP callback (signal) functions.*/
@@ -262,6 +277,7 @@ main (int   argc,
 
     g_print("Exit main loop\n");
     gst_element_set_state(rtpPipe, GST_STATE_NULL);
+    g_object_set(G_OBJECT(zrtp), "stop", TRUE, NULL);
 
     g_print ("Deleting ZRTP pipe\n");
     gst_object_unref(GST_OBJECT(rtpPipe));
