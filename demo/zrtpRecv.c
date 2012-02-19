@@ -120,6 +120,13 @@ zrtp_statusInfo (GstElement *element, gint severity, gint subCode, gpointer data
     switch (severity) {
         case zrtp_Info:
             g_print("ZRTP status info message: %s\n", InfoCodes[subCode]);
+            if (subCode == 10) {
+                GByteArray* mspArr;
+                g_object_get(G_OBJECT(element), "multi-param", &mspArr, NULL);
+                g_print("Application pointers: %p, %d\n", mspArr->data, mspArr->len);
+
+                g_object_set(G_OBJECT(element), "multi-param", mspArr, NULL);
+            }
             break;
 
         case zrtp_Warning:
@@ -259,9 +266,7 @@ main (int   argc,
     g_print("Receiving...\n");
     g_main_loop_run (loop);
 
-
     g_print("Exit main loop\n");
-    gst_element_set_state(rtpPipe, GST_STATE_NULL);
 
     g_print ("Deleting ZRTP pipe\n");
     gst_object_unref(GST_OBJECT(rtpPipe));

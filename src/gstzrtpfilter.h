@@ -108,6 +108,7 @@ struct _GstZrtpFilter
     guint32 localSSRC;      /* stored in host order */
     gchar* clientIdString;
     gchar* cacheName;
+    gboolean gotMultiParam;
     ZrtpContext* zrtpCtx;
     guint16 zrtpSeq;
     gboolean enableZrtp;

@@ -120,6 +120,8 @@ enum
     PROP_INITALIZE,
     PROP_START,
     PROP_STOP,
+    PROP_MULTI_PARAM,
+    PROP_MULTI_CHECK,
     PROP_LAST,
 };
 
@@ -366,10 +368,19 @@ gst_zrtp_filter_class_init (GstZrtpFilterClass * klass)
                                      g_param_spec_boolean ("start", "Start", "Start ZRTP engine explicitly.",
                                      FALSE, G_PARAM_READWRITE));
 
-    g_object_class_install_property (gobject_class, PROP_STOP,
-                                     g_param_spec_boolean ("stop", "Stop", "Stop ZRTP engine explicitly.",
-                                     FALSE, G_PARAM_WRITABLE));
+/* Don't stop manually, will be done when GStreamer calls the finalize function.'
+ *    g_object_class_install_property (gobject_class, PROP_STOP,
+ *                                    g_param_spec_boolean ("stop", "Stop", "Stop ZRTP engine explicitly.",
+ *                                    FALSE, G_PARAM_WRITABLE));
+ */
 
+    g_object_class_install_property (gobject_class, PROP_MULTI_PARAM,
+                                     g_param_spec_boxed("multi-param", "Multiparam", "Get or Set multi-stream parameters.",
+                                     G_TYPE_BYTE_ARRAY, G_PARAM_READWRITE));
+
+    g_object_class_install_property (gobject_class, PROP_MULTI_CHECK,
+                                     g_param_spec_boolean("multi-check", "Multicheck", "Check if this is a multi-stream session.",
+                                     FALSE, G_PARAM_READABLE));
   /**
    * zrtpfilter::status:
    * @zrtpfilter: the zrtpfilter instance
@@ -514,6 +525,7 @@ gst_zrtp_filter_init (GstZrtpFilter * filter,
     filter->mitmMode = FALSE;
     filter->localSSRC = 0;
     filter->peerSSRC = 0;
+    filter->gotMultiParam = FALSE;
 
     // TODO: caps setter, getter checks?
     // Initialize the receive (upstream) RTP data path
@@ -573,6 +585,7 @@ gst_zrtp_filter_set_property (GObject* object, guint prop_id,
                               const GValue* value, GParamSpec* pspec)
 {
     GstZrtpFilter *filter = GST_ZRTPFILTER (object);
+    GByteArray* mspArr;
 
     switch (prop_id) {
         case PROP_ENABLE_ZRTP:
@@ -594,8 +607,19 @@ gst_zrtp_filter_set_property (GObject* object, guint prop_id,
         case PROP_START:
             zrtp_filter_startZrtp(filter);
             break;
-        case PROP_STOP:
+/*        case PROP_STOP:
             zrtp_filter_stopZrtp(filter);
+            break;
+ */
+        case PROP_MULTI_PARAM:
+            mspArr = g_value_get_boxed(value);
+            g_print("set pointers: %p, %d\n", mspArr->data, mspArr->len);
+            if (filter->gotMultiParam) {
+                /* TODO: Error handling ? */
+                g_print("Cannot set multi-stream parameters on master ZRTP session.\n");
+                break;
+             }
+            zrtp_setMultiStrParams(filter->zrtpCtx, (char*)mspArr->data, mspArr->len);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -608,6 +632,8 @@ gst_zrtp_filter_get_property (GObject * object, guint prop_id,
                               GValue * value, GParamSpec * pspec)
 {
     GstZrtpFilter *filter = GST_ZRTPFILTER (object);
+    gint32 len;
+    gpointer param;
 
     switch (prop_id) {
         case PROP_ENABLE_ZRTP:
@@ -624,6 +650,21 @@ gst_zrtp_filter_get_property (GObject * object, guint prop_id,
             break;
         case PROP_START:
             g_value_set_boolean(value, filter->started);
+            break;
+        case PROP_MULTI_PARAM:
+            param = zrtp_getMultiStrParams(filter->zrtpCtx, &len);
+            if (param == NULL) {
+                g_value_set_boxed(value, g_byte_array_new()); /* Return empty byte array */
+                break;
+            }
+            /* Copy data to a Glib byte array to enable the application to simply free the data */
+            GByteArray* mspArr = g_byte_array_sized_new(len);
+            mspArr = g_byte_array_append(mspArr, param, len);
+            g_value_set_boxed(value, mspArr);
+            filter->gotMultiParam = TRUE;
+
+            /* Free the param data after copying - data was allocated by C wrapper with malloc*/
+            free(param);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -904,11 +945,8 @@ void zrtp_filter_stopZrtp(GstZrtpFilter *zrtp)
     zrtp->started = 0;
     zrtp->enableZrtp = FALSE;
     g_free(zrtp->cacheName);
-
-    GST_ZRTP_LOCK(zrtp);                /* Just to make sure no other thread has it */
-    GST_ZRTP_UNLOCK(zrtp);
-    g_mutex_free (zrtp->zrtpMutex);
     g_object_unref(zrtp->sysclock);
+    g_mutex_free (zrtp->zrtpMutex);
 }
 
 static

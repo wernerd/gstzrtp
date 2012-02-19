@@ -144,25 +144,25 @@ zrtp_negotiationFail (GstElement *element, gint severity, gint subCode, gpointer
 static void
 zrtp_sas (GstElement *element, gchar* sas, gint verified, gpointer data)  {
 
-    g_print("zrtpRecv got SAS code: %s, verified status: %d\n", sas, verified);
+    g_print("zrtpSend got SAS code: %s, verified status: %d\n", sas, verified);
 }
 
 static void
 zrtp_algorithm(GstElement *element, gchar* algorithms, gpointer data)  {
 
-    g_print("zrtpRecv negotiated algorithms: %s\n", algorithms);
+    g_print("zrtpSend negotiated algorithms: %s\n", algorithms);
 }
 
 static void
 zrtp_securityOff(GstElement *element, gpointer data)  {
 
-    g_print("zrtpRecv: security switched off.\n");
+    g_print("zrtpSend: security switched off.\n");
 }
 
 static void
 zrtp_notSupported(GstElement *element, gpointer data)  {
 
-    g_print("zrtpRecv: other peer does not support ZRTP.\n");
+    g_print("zrtpSend: other peer does not support ZRTP.\n");
 }
 
 int
@@ -204,7 +204,6 @@ main (int   argc,
         return -1;
     }
 
-
     /* Setup for RTP and RTCP receiver, even port is RTP, odd port is RTCP */
     g_object_set(G_OBJECT(udpRtpRecv), "port", 5004, NULL);
     g_object_set(G_OBJECT(udpRtcpRecv), "port", 5005, NULL);
@@ -229,12 +228,8 @@ main (int   argc,
     g_object_set(G_OBJECT(sinkRtcp), "dump", TRUE, NULL);
 
     /* Set the ZRTP cache name and initialize ZRTP with autosense mode ON
-     * Because this is a RTP receiver only we do not send RTP and thus don't have any
-     * SSRC data. Therefore set a local SSRC. For this demo program this is a fixed
-     * value (0xdeadbeef), for real applications this should be a 32 bit random value.
      */
     g_object_set(G_OBJECT(zrtp), "cache-name", "gstZrtpCacheSend.dat", NULL);
-//    g_object_set(G_OBJECT(zrtp), "local-ssrc", 0xdeadbeef, NULL);
     g_object_set(G_OBJECT(zrtp), "initialize", TRUE, NULL);
 
     /* we add a message handler */
@@ -259,25 +254,22 @@ main (int   argc,
     gst_element_link_pads(tstSrc, "rtcp_src", zrtp, "send_rtcp_sink");
     gst_element_link_pads(zrtp, "send_rtcp_src", udpRtcpSend, "sink");
 
-
     /* Connect the ZRTP callback (signal) functions.*/
-    g_signal_connect (zrtp, "status", G_CALLBACK(zrtp_statusInfo), zrtp);
-    g_signal_connect (zrtp, "sas", G_CALLBACK(zrtp_sas), zrtp);
-    g_signal_connect (zrtp, "algorithm", G_CALLBACK(zrtp_algorithm), zrtp);
-    g_signal_connect (zrtp, "negotiation", G_CALLBACK(zrtp_negotiationFail), zrtp);
-    g_signal_connect (zrtp, "security-off", G_CALLBACK(zrtp_securityOff), zrtp);
+    g_signal_connect (zrtp, "status",        G_CALLBACK(zrtp_statusInfo), zrtp);
+    g_signal_connect (zrtp, "sas",           G_CALLBACK(zrtp_sas), zrtp);
+    g_signal_connect (zrtp, "algorithm",     G_CALLBACK(zrtp_algorithm), zrtp);
+    g_signal_connect (zrtp, "negotiation",   G_CALLBACK(zrtp_negotiationFail), zrtp);
+    g_signal_connect (zrtp, "security-off",  G_CALLBACK(zrtp_securityOff), zrtp);
     g_signal_connect (zrtp, "not-supported", G_CALLBACK(zrtp_notSupported), zrtp);
 
-    g_print("Starting ZRTP receive pipeline\n");
+    g_print("Starting ZRTP send pipeline\n");
     gst_element_set_state(rtpPipe, GST_STATE_PLAYING);
 
-    g_print("Receiving...\n");
+    g_print("Sending...\n");
     g_main_loop_run (loop);
-
 
     g_print("Exit main loop\n");
     gst_element_set_state(rtpPipe, GST_STATE_NULL);
-    g_object_set(G_OBJECT(zrtp), "stop", TRUE, NULL);
 
     g_print ("Deleting ZRTP pipe\n");
     gst_object_unref(GST_OBJECT(rtpPipe));
