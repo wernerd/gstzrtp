@@ -121,7 +121,8 @@ enum
     PROP_START,
     PROP_STOP,
     PROP_MULTI_PARAM,
-    PROP_MULTI_CHECK,
+    PROP_IS_MULTI,
+    PROP_MULTI_AVAILABLE,
     PROP_LAST,
 };
 
@@ -345,7 +346,7 @@ gst_zrtp_filter_class_init (GstZrtpFilterClass * klass)
     gobject_class->get_property = gst_zrtp_filter_get_property;
 
     g_object_class_install_property (gobject_class, PROP_ENABLE_ZRTP,
-                                     g_param_spec_boolean ("enable-zrtp", "Enable", "Enable ZRTP processing.",
+                                     g_param_spec_boolean ("enable", "Enable", "Enable ZRTP processing.",
                                      FALSE, G_PARAM_READWRITE));
 
     g_object_class_install_property (gobject_class, PROP_LOCAL_SSRC,
@@ -378,9 +379,14 @@ gst_zrtp_filter_class_init (GstZrtpFilterClass * klass)
                                      g_param_spec_boxed("multi-param", "Multiparam", "Get or Set multi-stream parameters.",
                                      G_TYPE_BYTE_ARRAY, G_PARAM_READWRITE));
 
-    g_object_class_install_property (gobject_class, PROP_MULTI_CHECK,
-                                     g_param_spec_boolean("multi-check", "Multicheck", "Check if this is a multi-stream session.",
+    g_object_class_install_property (gobject_class, PROP_IS_MULTI,
+                                     g_param_spec_boolean("is-multi", "IsMulti", "Check if this is a multi-stream session.",
                                      FALSE, G_PARAM_READABLE));
+
+    g_object_class_install_property (gobject_class, PROP_MULTI_AVAILABLE,
+                                     g_param_spec_boolean("multi-available", "MultiAvailable",
+                                                          "Check if master session supports multi-stream mode.",
+                                                          FALSE, G_PARAM_READABLE));
   /**
    * zrtpfilter::status:
    * @zrtpfilter: the zrtpfilter instance
@@ -613,7 +619,6 @@ gst_zrtp_filter_set_property (GObject* object, guint prop_id,
  */
         case PROP_MULTI_PARAM:
             mspArr = g_value_get_boxed(value);
-            g_print("set pointers: %p, %d\n", mspArr->data, mspArr->len);
             if (filter->gotMultiParam) {
                 /* TODO: Error handling ? */
                 g_print("Cannot set multi-stream parameters on master ZRTP session.\n");
@@ -665,6 +670,12 @@ gst_zrtp_filter_get_property (GObject * object, guint prop_id,
 
             /* Free the param data after copying - data was allocated by C wrapper with malloc*/
             free(param);
+            break;
+        case PROP_IS_MULTI:
+            g_value_set_boolean(value, zrtp_isMultiStream(filter->zrtpCtx));
+            break;
+        case PROP_MULTI_AVAILABLE:
+            g_value_set_boolean(value, zrtp_isMultiStreamAvailable(filter->zrtpCtx));
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);

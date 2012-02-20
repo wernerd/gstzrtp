@@ -116,8 +116,6 @@ struct _GstZrtpFilter
     gboolean close_slave;
     gboolean mitmMode;
 
-    GstZrtpPrivate *priv;
-
 };
 
 struct _GstZrtpFilterClass
