@@ -152,8 +152,6 @@ gst_zrtptester_class_init (GstzrtptesterClass * klass)
                                      g_param_spec_boolean ("silent", "Silent", "Produce verbose output ?",
                                      FALSE, G_PARAM_READWRITE));
     gstelement_class->change_state = GST_DEBUG_FUNCPTR (gst_zrtptester_change_state);
-    GST_DEBUG_CATEGORY_INIT (gst_zrtptester_debug,
-      "zrtptester", 0, "ZRTP Tester");
 }
 
 /* initialize the new element
@@ -346,27 +344,23 @@ zrtptester_thread (Gstzrtptester* zrtptester)
     current_time = gst_clock_get_time(sysclock);
 
     GST_DEBUG_OBJECT (zrtptester, "starting at %" GST_TIME_FORMAT, GST_TIME_ARGS (current_time));
-    g_print("in zrtptester thread\n");
 
     GstBuffer* buf = gst_buffer_new_and_alloc(28);
     memcpy(GST_BUFFER_DATA(buf), rr, 28);
     gst_pad_push(zrtptester->rtcp_src, buf);
 
     while (zrtptester->start && zrtptester->counter < 10) {
-        GstClockReturn res;
-
         /* get initial estimate */
         next_timeout = current_time + 200 * GST_MSECOND;
 
-        GST_DEBUG_OBJECT (zrtptester, "next check time %" GST_TIME_FORMAT, GST_TIME_ARGS (next_timeout));
+        GST_DEBUG_OBJECT (zrtptester, "next send time %" GST_TIME_FORMAT, GST_TIME_ARGS (next_timeout));
 
-         g_print("thread loop\n");
        /* leave if no more timeouts, the session ended */
         if (next_timeout == GST_CLOCK_TIME_NONE)
             break;
 
         id = zrtptester->clockId = gst_clock_new_single_shot_id (sysclock, next_timeout);
-        res = gst_clock_id_wait (id, NULL);
+        gst_clock_id_wait (id, NULL);
 
         gst_clock_id_unref (id);
         zrtptester->clockId = NULL;
@@ -383,26 +377,15 @@ zrtptester_thread (Gstzrtptester* zrtptester)
         gchar* cp = ((zrtptester->counter & 1) == 1) ? data2 : data1;
         memcpy(payl, cp, 12);
 
+        GST_INFO("Sending RTP packet");
         gst_pad_push (zrtptester->srcpad, buf);
 
         /* update current time */
         current_time = gst_clock_get_time (sysclock);
 
-
-        /* we get unlocked because we need to perform reconsideration, don't perform
-         * the timeout but get a new reporting estimate. */
-        GST_DEBUG_OBJECT (zrtptester, "unlocked %d, current %" GST_TIME_FORMAT, res, GST_TIME_ARGS (current_time));
         zrtptester->counter++;
-
     }
-
-//     id = zrtptester->clockId = gst_clock_new_single_shot_id (sysclock, gst_clock_get_time (sysclock) + 200 * GST_MSECOND);
-//     gst_clock_id_wait (id, NULL);
-// 
-//     gst_clock_id_unref (id);
-//     zrtptester->clockId = NULL;
-
-    g_print("sending RTCP BYE\n");
+    GST_DEBUG("sending RTCP BYE");
 
     buf = gst_buffer_new_and_alloc(44);
     memcpy(GST_BUFFER_DATA(buf), bye, 44);
@@ -414,7 +397,6 @@ zrtptester_thread (Gstzrtptester* zrtptester)
     memcpy(gst_rtp_buffer_get_payload (buf), "exit", 5);
     gst_pad_push(zrtptester->srcpad, buf);
 
-    /* TODO: push EOS events */
     id = zrtptester->clockId = gst_clock_new_single_shot_id (sysclock, gst_clock_get_time (sysclock) + 2000 * GST_MSECOND);
     gst_clock_id_wait (id, NULL);
 
@@ -483,11 +465,9 @@ start_zrtptester_thread (Gstzrtptester* zrtptester)
 
     if (error != NULL) {
         res = FALSE;
-        g_print("thread start failed\n");
         GST_DEBUG_OBJECT (zrtptester, "failed to start thread, %s", error->message);
         g_error_free (error);
     } else {
-        g_print("thread started\n");
         res = TRUE;
     }
     return res;
@@ -499,7 +479,6 @@ gst_zrtptester_change_state (GstElement * element, GstStateChange transition)
     GstStateChangeReturn res;
     Gstzrtptester* zrtptester = GST_ZRTPTESTER (element);
 
-    g_print("Change - ");
     switch (transition) {
         case GST_STATE_CHANGE_NULL_TO_READY:
             break;
@@ -512,7 +491,6 @@ gst_zrtptester_change_state (GstElement * element, GstStateChange transition)
             /* no need to join yet, we might want to continue later. Also, the
              * dataflow could block downstream so that a join could just block
              * forever. */
-            g_print("paused to ready\n");
             stop_zrtptester_thread (zrtptester);
             break;
         default:
@@ -523,7 +501,6 @@ gst_zrtptester_change_state (GstElement * element, GstStateChange transition)
 
     switch (transition) {
         case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
-            g_print("paused to playing\n");
             if (!start_zrtptester_thread (zrtptester))
                 goto failed_thread;
             break;

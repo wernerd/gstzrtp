@@ -317,6 +317,10 @@ main (int   argc,
 
 
     /* Connect the ZRTP callback (signal) functions.*/
+    /* NOTE: The connect to the status call back of the master ZRTP stream hands over the
+     * slave's ZRTP plugin pointer. This enables the master to set the multi-stream
+     * parameters when it detects that it has reached the 'zrtp_InfoSecureStateOn' status.
+     */
     g_signal_connect (zrtp, "status", G_CALLBACK(zrtp_statusInfoMaster), zrtpVid);
     g_signal_connect (zrtp, "sas", G_CALLBACK(zrtp_sas), zrtp);
     g_signal_connect (zrtp, "algorithm", G_CALLBACK(zrtp_algorithm), zrtp);
