@@ -204,6 +204,13 @@ main (int   argc,
         return -1;
     }
 
+//     GType ty = g_type_from_name("GstFakeSinkStateError");
+//     gpointer tyClass = g_type_class_peek(ty);
+//     g_print("Type: %d, name: %s, pointer: %p\n", ty, g_type_name(ty), tyClass);
+
+//     gst_debug_set_threshold_for_name ("zrtpfilter", GST_LEVEL_TRACE);
+    gst_debug_set_threshold_for_name ("zrtptester", GST_LEVEL_INFO);
+
     /* Setup for RTP and RTCP receiver, even port is RTP, odd port is RTCP */
     g_object_set(G_OBJECT(udpRtpRecv), "port", 5004, NULL);
     g_object_set(G_OBJECT(udpRtcpRecv), "port", 5005, NULL);
