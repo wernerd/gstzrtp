@@ -56,89 +56,78 @@ bus_call (GstBus     *bus,
     return TRUE;
 }
 
-const char* InfoCodes[] =
-{
-    "EMPTY",
-    "Hello received, preparing a Commit",
-    "Commit: Generated a public DH key",
-    "Responder: Commit received, preparing DHPart1",
-    "DH1Part: Generated a public DH key",
-    "Initiator: DHPart1 received, preparing DHPart2",
-    "Responder: DHPart2 received, preparing Confirm1",
-    "Initiator: Confirm1 received, preparing Confirm2",
-    "Responder: Confirm2 received, preparing Conf2Ack",
-    "At least one retained secrets matches - security OK",
-    "Entered secure state",
-    "No more security for this session"
-};
-
-/**
- * Sub-codes for Warning
- */
-const char* WarningCodes [] =
-{
-    "EMPTY",
-    "Commit contains an AES256 cipher but does not offer a Diffie-Helman 4096",
-    "Received a GoClear message",
-    "Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096",
-    "No retained shared secrets available - must verify SAS",
-    "Internal ZRTP packet checksum mismatch - packet dropped",
-    "Dropping packet because SRTP authentication failed!",
-    "Dropping packet because SRTP replay check failed!",
-    "Valid retained shared secrets availabe but no matches found - must verify SAS"
-};
-
-/**
- * Sub-codes for Severe
- */
-const char* SevereCodes[] =
-{
-    "EMPTY",
-    "Hash HMAC check of Hello failed!",
-    "Hash HMAC check of Commit failed!",
-    "Hash HMAC check of DHPart1 failed!",
-    "Hash HMAC check of DHPart2 failed!",
-    "Cannot send data - connection or peer down?",
-    "Internal protocol error occured!",
-    "Cannot start a timer - internal resources exhausted?",
-    "Too much retries during ZRTP negotiation - connection or peer down?"
-};
-
-/* TODO: Check if we can / shall use glib ENUM type for the severity part?
- */
-enum zrtp_MessageSeverity {
-    zrtp_Info = 1,                      /*!< Just an info message */
-    zrtp_Warning,                       /*!< A Warning message - security can be established */
-    zrtp_Severe,                        /*!< Severe error, security will not be established */
-    zrtp_ZrtpError                      /*!< ZRTP error, security will not be established  */
-};
-
-
- 
 static void
 zrtp_statusInfo (GstElement *element, gint severity, gint subCode, gpointer data)  {
-    switch (severity) {
-        case zrtp_Info:
-            g_print("ZRTP status info message: %s\n", InfoCodes[subCode]);
-            if (subCode == 10) {
+
+    static GType severityType = 0;
+    static GType infoType = 0;
+    static GType warningType = 0;
+    static GType severeType = 0;
+    static GType errorType = 0;
+
+    gpointer klass = NULL;
+    GEnumValue* severityVal = NULL;
+
+    if (!severityType) {
+        severityType = g_type_from_name("GstZrtpMsgSeverity");
+    }
+    if (!infoType) {
+        infoType = g_type_from_name("GstZrtpInfo");
+    }
+    if (!warningType) {
+        warningType = g_type_from_name("GstZrtpWarning");
+    }
+    if (!severeType) {
+        severeType = g_type_from_name("GstZrtpSevere");
+    }
+    if (!errorType) {
+        errorType = g_type_from_name("GstZrtpError");
+    }
+    if (!severityType || !infoType || !warningType || !severeType || !errorType) {
+        g_printerr ("One ZRTP enum type cannot not be found - check this.\n");
+        return;
+    }
+    klass = g_type_class_ref(severityType);
+    severityVal = g_enum_get_value(klass, severity);
+    g_type_class_unref(klass);
+
+    switch (severityVal->value_name[0]) {
+        case 'I':
+            klass = g_type_class_ref(infoType);
+            g_print("ZRTP status info message: %s - %s\n", g_enum_get_value(klass, subCode)->value_name,
+                    g_enum_get_value(klass, subCode)->value_nick);
+
+            /* Here check if ZRTP reached state 'SecureStateOn' and test multi-stream parameters
+             */
+            if (g_strcmp0("InfoSecureStateOn", g_enum_get_value(klass, subCode)->value_name) == 0) {
                 GByteArray* mspArr;
                 g_object_get(G_OBJECT(element), "multi-param", &mspArr, NULL);
                 g_print("Application pointers: %p, %d\n", mspArr->data, mspArr->len);
 
                 g_object_set(G_OBJECT(element), "multi-param", mspArr, NULL);
             }
+            g_type_class_unref(klass);
             break;
 
-        case zrtp_Warning:
-            g_print("ZRTP status warning message: %s\n", WarningCodes[subCode]);
+        case 'W':
+            klass = g_type_class_ref(warningType);
+            g_print("ZRTP status warning message: %s - %s\n", g_enum_get_value(klass, subCode)->value_name,
+                    g_enum_get_value(klass, subCode)->value_nick);
+            g_type_class_unref(klass);
             break;
 
-        case zrtp_Severe:
-            g_print("ZRTP status severe message: %s\n", SevereCodes[subCode]);
+        case 'S':
+            klass = g_type_class_ref(severeType);
+            g_print("ZRTP status severe message: %s - %s\n", g_enum_get_value(klass, subCode)->value_name,
+                    g_enum_get_value(klass, subCode)->value_nick);
+            g_type_class_unref(klass);
             break;
 
-        case zrtp_ZrtpError:
-            g_print("ZRTP Error: severity: %d, subcode: %x\n", severity, subCode*-1);
+        case 'Z':
+            klass = g_type_class_ref(errorType);
+            g_print("ZRTP Error: %s - %s\n", g_enum_get_value(klass, subCode)->value_name,
+                    g_enum_get_value(klass, subCode)->value_nick);
+            g_type_class_unref(klass);
             break;
     }
 }
@@ -204,7 +193,6 @@ main (int   argc,
         g_printerr ("One element could not be created. Exiting.\n");
         return -1;
     }
-
 
     /* Setup for RTP and RTCP receiver, even port is RTP, odd port is RTCP */
     g_object_set(G_OBJECT(udpRtpRecv), "port", 5002, NULL);

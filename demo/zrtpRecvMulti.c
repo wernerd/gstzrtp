@@ -142,6 +142,10 @@ zrtp_statusInfoMaster (GstElement *element, gint severity, gint subCode, gpointe
         g_object_get(G_OBJECT(element), "multi-param", &mspArr, NULL);
         g_print("Application pointers: %p, %d\n", mspArr->data, mspArr->len);
 
+        /* The Master stream callback gets the slave's ZRTP plugin pointer via the 'data'
+         * parameter. This function enables the slave stream after it set the multi-stream
+         * parameters.
+         */
         g_object_set(G_OBJECT(data), "multi-param", mspArr, NULL);
         g_object_set(G_OBJECT(data), "enable", TRUE, NULL);
 
@@ -198,7 +202,7 @@ main (int   argc,
 
     loop = g_main_loop_new (NULL, FALSE);
 
-    /* Create gstreamer elements */
+    /* Create gstreamer elements for the first stream, could be an audio stream */
     rtpPipe  = gst_pipeline_new ("rtp-recv");
 
     udpRtpRecv  = gst_element_factory_make("udpsrc", "udp-rtp-recv");
@@ -211,10 +215,11 @@ main (int   argc,
     sinkRtcp    = gst_element_factory_make("fakesink", "rtcp-sink");
 
     if (!rtpPipe || !udpRtpRecv || !udpRtcpRecv || !udpRtpSend || !zrtp || !sinkRtp || !sinkRtcp) {
-        g_printerr ("One element could not be created. Exiting.\n");
+        g_printerr ("One of first stream elements could not be created. Exiting.\n");
         return -1;
     }
 
+    /* Create gstreamer elements for the second stream, could be a video stream */
     udpRtpRecvVid  = gst_element_factory_make("udpsrc", "udp-rtp-recv-vid");
     udpRtcpRecvVid = gst_element_factory_make("udpsrc", "udp-rtcp-recv-vid");
     udpRtpSendVid  = gst_element_factory_make("udpsink", "udp-rtp-send-vid");
@@ -224,17 +229,12 @@ main (int   argc,
     sinkRtpVid     = gst_element_factory_make("fakesink", "rtp-sink-vid");
     sinkRtcpVid    = gst_element_factory_make("fakesink", "rtcp-sink-vid");
 
-    if (!rtpPipe || !udpRtpRecv || !udpRtcpRecv || !udpRtpSend || !zrtp || !sinkRtp || !sinkRtcp) {
-        g_printerr ("One of vid elements could not be created. Exiting.\n");
-        return -1;
-    }
-
     if (!udpRtpRecvVid || !udpRtcpRecvVid || !udpRtpSendVid || !zrtpVid || !sinkRtpVid || !sinkRtcpVid) {
-        g_printerr ("One of vid elements could not be created. Exiting.\n");
+        g_printerr ("One of second stream elements could not be created. Exiting.\n");
         return -1;
     }
 
-    /* Setup for RTP and RTCP receiver, even port is RTP, odd port is RTCP */
+    /* Setup for receiver first RTP and RTCP stream, even port is RTP, odd port is RTCP */
     g_object_set(G_OBJECT(udpRtpRecv), "port", 5002, NULL);
     g_object_set(G_OBJECT(udpRtcpRecv), "port", 5003, NULL);
 
@@ -253,7 +253,7 @@ main (int   argc,
     g_object_set(G_OBJECT(sinkRtcp), "dump", TRUE, NULL);
 
 
-    /* Setup for Video RTP and RTCP receiver, even port is RTP, odd port is RTCP */
+    /* Setup receiver for second RTP and RTCP stream, even port is RTP, odd port is RTCP */
     g_object_set(G_OBJECT(udpRtpRecvVid), "port", 5012, NULL);
     g_object_set(G_OBJECT(udpRtcpRecvVid), "port", 5013, NULL);
 
@@ -273,7 +273,9 @@ main (int   argc,
 
 
 
-    /* Set the ZRTP cache name and initialize ZRTP with autosense mode ON
+    /* Set the ZRTP cache name and initialize ZRTP with autosense mode ON, parameter
+     * to "initialize" is TRUE.
+     *
      * Because this is a RTP receiver only we do not send RTP and thus don't have any
      * SSRC data. Therefore set a local SSRC. For this demo program this is a fixed
      * value (0xdeadbeef), for real applications this should be a 32 bit random value.
@@ -282,6 +284,11 @@ main (int   argc,
     g_object_set(G_OBJECT(zrtp), "local-ssrc", 0xdeadbeef, NULL);
     g_object_set(G_OBJECT(zrtp), "initialize", TRUE, NULL);
 
+    /* NOTE: A slave multi-stream ZRTP plugin must not be 'enabled' during initialization,
+     * therefore the parameter to "initialize" is FALSE.
+     *
+     * Use a different SSRC for the second ZRTP stream to avoid SSRC collisions.
+     */
     g_object_set(G_OBJECT(zrtpVid), "cache-name", "gstZrtpCache.dat", NULL);
     g_object_set(G_OBJECT(zrtpVid), "local-ssrc", 0xdeadbeee, NULL);
     g_object_set(G_OBJECT(zrtpVid), "initialize", FALSE, NULL);
@@ -314,26 +321,26 @@ main (int   argc,
 
     gst_element_link_pads(zrtpVid, "send_rtp_src", udpRtpSendVid, "sink");
 
-
-
     /* Connect the ZRTP callback (signal) functions.*/
-    /* NOTE: The connect to the status call back of the master ZRTP stream hands over the
+    /* NOTE: The connect call to the status signal of the master ZRTP stream hands over the
      * slave's ZRTP plugin pointer. This enables the master to set the multi-stream
      * parameters when it detects that it has reached the 'zrtp_InfoSecureStateOn' status.
      */
-    g_signal_connect (zrtp, "status", G_CALLBACK(zrtp_statusInfoMaster), zrtpVid);
-    g_signal_connect (zrtp, "sas", G_CALLBACK(zrtp_sas), zrtp);
-    g_signal_connect (zrtp, "algorithm", G_CALLBACK(zrtp_algorithm), zrtp);
-    g_signal_connect (zrtp, "negotiation", G_CALLBACK(zrtp_negotiationFail), zrtp);
-    g_signal_connect (zrtp, "security-off", G_CALLBACK(zrtp_securityOff), zrtp);
-    g_signal_connect (zrtp, "not-supported", G_CALLBACK(zrtp_notSupported), zrtp);
+    g_signal_connect(zrtp, "status",        G_CALLBACK(zrtp_statusInfoMaster), zrtpVid);
+    g_signal_connect(zrtp, "sas",           G_CALLBACK(zrtp_sas), zrtp);
+    g_signal_connect(zrtp, "algorithm",     G_CALLBACK(zrtp_algorithm), zrtp);
+    g_signal_connect(zrtp, "negotiation",   G_CALLBACK(zrtp_negotiationFail), zrtp);
+    g_signal_connect(zrtp, "security-off",  G_CALLBACK(zrtp_securityOff), zrtp);
+    g_signal_connect(zrtp, "not-supported", G_CALLBACK(zrtp_notSupported), zrtp);
 
-    g_signal_connect (zrtpVid, "status", G_CALLBACK(zrtp_statusInfo), zrtpVid);
-    g_signal_connect (zrtpVid, "sas", G_CALLBACK(zrtp_sas), zrtpVid);
-    g_signal_connect (zrtpVid, "algorithm", G_CALLBACK(zrtp_algorithm), zrtpVid);
-    g_signal_connect (zrtpVid, "negotiation", G_CALLBACK(zrtp_negotiationFail), zrtpVid);
-    g_signal_connect (zrtpVid, "security-off", G_CALLBACK(zrtp_securityOff), zrtpVid);
-    g_signal_connect (zrtpVid, "not-supported", G_CALLBACK(zrtp_notSupported), zrtpVid);
+    /* Connect slave ZRTP stream to different status signal callback
+     */
+    g_signal_connect(zrtpVid, "status",        G_CALLBACK(zrtp_statusInfo), zrtpVid);
+    g_signal_connect(zrtpVid, "sas",           G_CALLBACK(zrtp_sas), zrtpVid);
+    g_signal_connect(zrtpVid, "algorithm",     G_CALLBACK(zrtp_algorithm), zrtpVid);
+    g_signal_connect(zrtpVid, "negotiation",   G_CALLBACK(zrtp_negotiationFail), zrtpVid);
+    g_signal_connect(zrtpVid, "security-off",  G_CALLBACK(zrtp_securityOff), zrtpVid);
+    g_signal_connect(zrtpVid, "not-supported", G_CALLBACK(zrtp_notSupported), zrtpVid);
 
     g_print("Starting ZRTP receive pipeline\n");
     gst_element_set_state(rtpPipe, GST_STATE_PLAYING);
