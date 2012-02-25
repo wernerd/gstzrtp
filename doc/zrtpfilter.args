@@ -1,0 +1,90 @@
+<ARG>
+<NAME>GstZrtpFilter::cache-name</NAME>
+<TYPE>gchar*</TYPE>
+<RANGE></RANGE>
+<FLAGS>rw</FLAGS>
+<NICK>Cache</NICK>
+<BLURB>ZRTP cache filename.</BLURB>
+<DEFAULT>NULL</DEFAULT>
+</ARG>
+
+<ARG>
+<NAME>GstZrtpFilter::enable</NAME>
+<TYPE>gboolean</TYPE>
+<RANGE></RANGE>
+<FLAGS>rw</FLAGS>
+<NICK>Enable</NICK>
+<BLURB>Enable ZRTP processing.</BLURB>
+<DEFAULT>FALSE</DEFAULT>
+</ARG>
+
+<ARG>
+<NAME>GstZrtpFilter::initialize</NAME>
+<TYPE>gboolean</TYPE>
+<RANGE></RANGE>
+<FLAGS>w</FLAGS>
+<NICK>Initialize</NICK>
+<BLURB>Initialize ZRTP engine and enable.</BLURB>
+<DEFAULT>FALSE</DEFAULT>
+</ARG>
+
+<ARG>
+<NAME>GstZrtpFilter::is-multi</NAME>
+<TYPE>gboolean</TYPE>
+<RANGE></RANGE>
+<FLAGS>r</FLAGS>
+<NICK>IsMulti</NICK>
+<BLURB>Check if this is a multi-stream session.</BLURB>
+<DEFAULT>FALSE</DEFAULT>
+</ARG>
+
+<ARG>
+<NAME>GstZrtpFilter::local-ssrc</NAME>
+<TYPE>guint</TYPE>
+<RANGE>>= 1</RANGE>
+<FLAGS>rw</FLAGS>
+<NICK>LocalSSRC</NICK>
+<BLURB>Set local SSRC if it cannot be determined.</BLURB>
+<DEFAULT>1</DEFAULT>
+</ARG>
+
+<ARG>
+<NAME>GstZrtpFilter::multi-available</NAME>
+<TYPE>gboolean</TYPE>
+<RANGE></RANGE>
+<FLAGS>r</FLAGS>
+<NICK>MultiAvailable</NICK>
+<BLURB>Check if master session supports multi-stream mode.</BLURB>
+<DEFAULT>FALSE</DEFAULT>
+</ARG>
+
+<ARG>
+<NAME>GstZrtpFilter::multi-param</NAME>
+<TYPE>GByteArray*</TYPE>
+<RANGE></RANGE>
+<FLAGS>rw</FLAGS>
+<NICK>Multiparam</NICK>
+<BLURB>Get or Set multi-stream parameters.</BLURB>
+<DEFAULT></DEFAULT>
+</ARG>
+
+<ARG>
+<NAME>GstZrtpFilter::set-mitm-mode</NAME>
+<TYPE>gboolean</TYPE>
+<RANGE></RANGE>
+<FLAGS>rw</FLAGS>
+<NICK>MITM</NICK>
+<BLURB>Enable MitM (PBX) enrollment.</BLURB>
+<DEFAULT>FALSE</DEFAULT>
+</ARG>
+
+<ARG>
+<NAME>GstZrtpFilter::start</NAME>
+<TYPE>gboolean</TYPE>
+<RANGE></RANGE>
+<FLAGS>rw</FLAGS>
+<NICK>Start</NICK>
+<BLURB>Start ZRTP engine explicitly.</BLURB>
+<DEFAULT>FALSE</DEFAULT>
+</ARG>
+

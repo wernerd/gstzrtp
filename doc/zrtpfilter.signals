@@ -1,0 +1,65 @@
+<SIGNAL>
+<NAME>GstZrtpFilter::algorithm</NAME>
+<RETURNS>void</RETURNS>
+<FLAGS>l</FLAGS>
+GstZrtpFilter *gstzrtpfilter
+gchar *arg1
+</SIGNAL>
+
+<SIGNAL>
+<NAME>GstZrtpFilter::ask-enrollment</NAME>
+<RETURNS>void</RETURNS>
+<FLAGS>l</FLAGS>
+GstZrtpFilter *gstzrtpfilter
+gint  arg1
+</SIGNAL>
+
+<SIGNAL>
+<NAME>GstZrtpFilter::inform-enrollment</NAME>
+<RETURNS>void</RETURNS>
+<FLAGS>l</FLAGS>
+GstZrtpFilter *gstzrtpfilter
+gint  arg1
+</SIGNAL>
+
+<SIGNAL>
+<NAME>GstZrtpFilter::negotiation</NAME>
+<RETURNS>void</RETURNS>
+<FLAGS>l</FLAGS>
+GstZrtpFilter *gstzrtpfilter
+gint  arg1
+gint  arg2
+</SIGNAL>
+
+<SIGNAL>
+<NAME>GstZrtpFilter::not-supported</NAME>
+<RETURNS>void</RETURNS>
+<FLAGS>l</FLAGS>
+GstZrtpFilter *gstzrtpfilter
+</SIGNAL>
+
+<SIGNAL>
+<NAME>GstZrtpFilter::sas</NAME>
+<RETURNS>void</RETURNS>
+<FLAGS>l</FLAGS>
+GstZrtpFilter *gstzrtpfilter
+gchar *arg1
+gint  arg2
+</SIGNAL>
+
+<SIGNAL>
+<NAME>GstZrtpFilter::security-off</NAME>
+<RETURNS>void</RETURNS>
+<FLAGS>l</FLAGS>
+GstZrtpFilter *gstzrtpfilter
+</SIGNAL>
+
+<SIGNAL>
+<NAME>GstZrtpFilter::status</NAME>
+<RETURNS>void</RETURNS>
+<FLAGS>l</FLAGS>
+GstZrtpFilter *gstzrtpfilter
+gint  arg1
+gint  arg2
+</SIGNAL>
+

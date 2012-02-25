@@ -54,6 +54,195 @@
 
 G_BEGIN_DECLS
 
+/* Ugly workaround: gtk-doc sees this but don't use it it actual
+ * compile to avoid synchroinzation problems with libzrtpcpp includes.
+ */
+#if 0
+/*
+ * IMPORTANT: keep the following enums in synch with ZrtpCodes. We copy them here
+ * to avoid any C++ header includes and defines. The protocol states are located
+ * ZrtpStateClass.h .
+ */
+/**
+ * zrtp_MessageSeverity:
+ * @zrtp_Info: keeps the user informed about ongoing processing and
+ *     security setup. The enumeration InfoCodes defines the subcodes.
+ * @zrtp_Warning: is an information about some security issues, e.g. if
+ *     an AES 256 encryption is request but only DH 3072 as public key scheme
+ *     is supported. ZRTP will establish a secure session (SRTP). The
+ *     enumeration WarningCodes defines the sub-codes.
+ * @zrtp_Severe: is used if an error occured during ZRTP protocol usage.
+ *     In case of <em>Severe</em> ZRTP will <b>not</b> establish a secure session.
+ *     The enumeration SevereCodes defines the sub-codes.
+ * @zrtp_ZrtpError: shows a ZRTP security problem. Refer to the enumeration
+ *     ZrtpErrorCodes for sub-codes. GNU ZRTP of course will <b>not</b>
+ *     establish a secure session.
+ *
+ * This enum defines the information message severity.
+ *
+ * The ZRTP implementation issues information messages to inform the user
+ * about ongoing processing, unusual behavior, or alerts in case of severe
+ * problems. Each main severity code a number of sub-codes exist that
+ * specify the exact nature of the problem.
+ *
+ * An application gets message severity codes and the associated sub-codes
+ * via the ZrtpUserCallback#showMessage method.
+ *
+ */
+typedef enum {
+    zrtp_Info = 1,
+    zrtp_Warning,
+    zrtp_Severe,
+    zrtp_ZrtpError
+} zrtp_MessageSeverity;
+
+/**
+ * zrtp_InfoCodes:
+ * @zrtp_InfoHelloReceived: Hello received, preparing a Commit
+ * @zrtp_InfoCommitDHGenerated: Commit: Generated a public DH key
+ * @zrtp_InfoRespCommitReceived: Responder: Commit received, preparing DHPart1
+ * @zrtp_InfoDH1DHGenerated: DH1Part: Generated a public DH key
+ * @zrtp_InfoInitDH1Received: Initiator: DHPart1 received, preparing DHPart2
+ * @zrtp_InfoRespDH2Received: Responder: DHPart2 received, preparing Confirm1
+ * @zrtp_InfoInitConf1Received: Initiator: Confirm1 received, preparing Confirm2
+ * @zrtp_InfoRespConf2Received: Responder: Confirm2 received, preparing Conf2Ack
+ * @zrtp_InfoRSMatchFound: At least one retained secrets matches - forward security OK
+ * @zrtp_InfoSecureStateOn: Entered secure state
+ * @zrtp_InfoSecureStateOff: No more security for this session
+ *
+ * Sub-codes for Info
+ */
+typedef enum {
+    zrtp_InfoHelloReceived = 1,
+    zrtp_InfoCommitDHGenerated,
+    zrtp_InfoRespCommitReceived,
+    zrtp_InfoDH1DHGenerated,
+    zrtp_InfoInitDH1Received,
+    zrtp_InfoRespDH2Received,
+    zrtp_InfoInitConf1Received,
+    zrtp_InfoRespConf2Received,
+    zrtp_InfoRSMatchFound,
+    zrtp_InfoSecureStateOn,
+    zrtp_InfoSecureStateOff
+} zrtp_InfoCodes;
+
+/**
+ * zrtp_WarningCodes:
+ * @zrtp_WarningDHAESmismatch: Commit contains an AES256 cipher but does not offer a Diffie-Helman 4096
+ * @zrtp_WarningGoClearReceived: Received a GoClear message
+ * @zrtp_WarningDHShort: Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096
+ * @zrtp_WarningNoRSMatch: No retained shared secrets available - must verify SAS
+ * @zrtp_WarningCRCmismatch: Internal ZRTP packet checksum mismatch - packet dropped
+ * @zrtp_WarningSRTPauthError: Dropping packet because SRTP authentication failed!
+ * @zrtp_WarningSRTPreplayError: Dropping packet because SRTP replay check failed!
+ * @zrtp_WarningNoExpectedRSMatch: Valid retained shared secrets availabe but no matches found - must verify SAS
+ *
+ * Sub-codes for Warning
+ */
+typedef enum {
+    zrtp_WarningDHAESmismatch = 1,
+    zrtp_WarningGoClearReceived,
+    zrtp_WarningDHShort,
+    zrtp_WarningNoRSMatch,
+    zrtp_WarningCRCmismatch,
+    zrtp_WarningSRTPauthError,
+    zrtp_WarningSRTPreplayError,
+    zrtp_WarningNoExpectedRSMatch
+} zrtp_WarningCodes;
+
+/**
+ * zrtp_SevereCodes:
+ * @zrtp_SevereHelloHMACFailed: Hash HMAC check of Hello failed!
+ * @zrtp_SevereCommitHMACFailed: Hash HMAC check of Commit failed
+ * @zrtp_SevereDH1HMACFailed: Hash HMAC check of DHPart1 failed!
+ * @zrtp_SevereDH2HMACFailed: Hash HMAC check of DHPart2 failed!
+ * @zrtp_SevereCannotSend: Cannot send data - connection or peer down?
+ * @zrtp_SevereProtocolError: Internal protocol error occured!
+ * @zrtp_SevereNoTimer: Cannot start a timer - internal resources exhausted?
+ * @zrtp_SevereTooMuchRetries: Too much retries during ZRTP negotiation - connection or peer down?
+ *
+ * Sub-codes for Severe
+ */
+typedef enum {
+    zrtp_SevereHelloHMACFailed = 1,
+    zrtp_SevereCommitHMACFailed,
+    zrtp_SevereDH1HMACFailed,
+    zrtp_SevereDH2HMACFailed,
+    zrtp_SevereCannotSend,
+    zrtp_SevereProtocolError,
+    zrtp_SevereNoTimer,
+    zrtp_SevereTooMuchRetries
+} zrtp_SevereCodes;
+
+/**
+ * zrtp_ZrtpErrorCodes:
+ * @zrtp_MalformedPacket: Malformed packet (CRC OK, but wrong structure)
+ * @zrtp_CriticalSWError: Critical software error
+ * @zrtp_UnsuppZRTPVersion: Unsupported ZRTP version
+ * @zrtp_HelloCompMismatch: Hello components mismatch
+ * @zrtp_UnsuppHashType: Hash type not supported
+ * @zrtp_UnsuppCiphertype: Cipher type not supported
+ * @zrtp_UnsuppPKExchange: Public key exchange not supported
+ * @zrtp_UnsuppSRTPAuthTag: SRTP auth. tag not supported
+ * @zrtp_UnsuppSASScheme: SAS scheme not supported
+ * @zrtp_NoSharedSecret: No shared secret available, DH mode required
+ * @zrtp_DHErrorWrongPV: DH Error: bad pvi or pvr ( == 1, 0, or p-1)
+ * @zrtp_DHErrorWrongHVI: DH Error: hvi != hashed data
+ * @zrtp_SASuntrustedMiTM: Received relayed SAS from untrusted MiTM
+ * @zrtp_ConfirmHMACWrong: Auth. Error: Bad Confirm pkt HMAC
+ * @zrtp_NonceReused: Nonce reuse
+ * @zrtp_EqualZIDHello: Equal ZIDs in Hello
+ * @zrtp_GoCleatNotAllowed: GoClear packet received, but not allowed
+ *
+ * Error codes according to the ZRTP specification chapter 6.9
+ *
+ * GNU ZRTP uses these error codes in two ways: to fill the appropriate
+ * field ing the ZRTP Error packet and as sub-code in
+ * ZrtpUserCallback#showMessage(). GNU ZRTP uses thes error codes also
+ * to report received Error packts, in this case the sub-codes are their
+ * negative values.
+ *
+ * The enumeration member comments are copied from the ZRTP specification.
+ */
+typedef enum {
+    zrtp_MalformedPacket =   0x10,
+    zrtp_CriticalSWError =   0x20,
+    zrtp_UnsuppZRTPVersion = 0x30,
+    zrtp_HelloCompMismatch = 0x40,
+    zrtp_UnsuppHashType =    0x51,
+    zrtp_UnsuppCiphertype =  0x52,
+    zrtp_UnsuppPKExchange =  0x53,
+    zrtp_UnsuppSASScheme =   0x55,
+    zrtp_NoSharedSecret =    0x56,
+    zrtp_DHErrorWrongPV =    0x61,
+    zrtp_DHErrorWrongHVI =   0x62,
+    zrtp_SASuntrustedMiTM =  0x63,
+    zrtp_ConfirmHMACWrong =  0x70,
+    zrtp_NonceReused =       0x80,
+    zrtp_EqualZIDHello =     0x90,
+    zrtp_GoCleatNotAllowed = 0x100,
+    /*< private >*/
+    zrtp_IgnorePacket =      0x7fffffff
+} zrtp_ZrtpErrorCodes;
+
+/**
+ * zrtp_InfoEnrollment:
+ * @zrtp_EnrollmentRequest: Aks user to confirm or deny an Enrollemnt request
+ * @zrtp_EnrollmentCanceled: User did not confirm the PBX enrollement
+ * @zrtp_EnrollmentFailed: Enrollment process failed, no PBX secret available
+ * @zrtp_EnrollmentOk: Enrollment process for this PBX was ok
+ *
+ * Information codes for the Enrollment user callbacks.
+ */
+typedef enum {
+    zrtp_EnrollmentRequest,
+    zrtp_EnrollmentCanceled,
+    zrtp_EnrollmentFailed,
+    zrtp_EnrollmentOk
+} zrtp_InfoEnrollment;
+
+#endif
+
 /* #defines don't like whitespacey bits */
 #define GST_TYPE_ZRTPFILTER \
 (gst_zrtp_filter_get_type())
@@ -68,12 +257,17 @@ G_BEGIN_DECLS
 
 typedef struct _GstZrtpFilter      GstZrtpFilter;
 typedef struct _GstZrtpFilterClass GstZrtpFilterClass;
-typedef struct _GstZrtpPrivate     GstZrtpPrivate;
 
+/**
+ * GstZrtpFilter:
+ *
+ * Opaque #GstZrtpFilter data structure.
+ */
 struct _GstZrtpFilter
 {
     GstElement element;
 
+    /*< private >*/
     GstPad  *recv_rtcp_sink;
     GstPad  *recv_rtcp_src;
 

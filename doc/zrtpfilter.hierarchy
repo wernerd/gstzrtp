@@ -1,0 +1,9 @@
+GObject
+  GstObject
+    GstElement
+      GstZrtpFilter
+    GstPad
+    GstPadTemplate
+  GstSignalObject
+GInterface
+  GTypePlugin

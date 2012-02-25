@@ -1,0 +1,19 @@
+<SECTION>
+<FILE>zrtpfilter</FILE>
+<TITLE>GstZrtpFilter</TITLE>
+GstZrtpFilter
+GstZrtpFilterClass
+zrtp_MessageSeverity
+zrtp_InfoCodes
+zrtp_WarningCodes
+zrtp_SevereCodes
+zrtp_ZrtpErrorCodes
+zrtp_InfoEnrollment
+<SUBSECTION Standard>
+GST_IS_ZRTPFILTER
+GST_IS_ZRTPFILTER_CLASS
+GST_TYPE_ZRTPFILTER
+GST_ZRTPFILTER
+GST_ZRTPFILTER_CLASS
+gst_zrtp_filter_get_type
+</SECTION>

@@ -1,6 +1,8 @@
 /*
  * GStreamer - ZRTP filter
  * Copyright (C) 2012 Werner Dittmann <Werner.Dittmann@t-online.de>
+ *
+ * gstzrtpfilter.c:
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -40,9 +42,8 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-
 /**
- * SECTION:element-zrtpfilter
+ * SECTION:zrtpfilter
  *
  * The ZRTP filter sits between the raw media transport (usually UDP) and the 
  * upstream plugin, usually a RTP plugin. 
@@ -77,7 +78,7 @@
  *       udpsink clients="127.0.0.1:5002" sync=false async=false \
  *   testsrc.rtcp_src ! zrtp.send_rtcp_sink zrtp.send_rtcp_src ! \
  *       udpsink clients="127.0.0.1:5003" sync=false async=false
- * ]|
+ * ]| Test pipe
  * </refsect2>
  */
 
@@ -110,8 +111,7 @@ enum {
     LAST_SIGNAL
 };
 
-enum
-{
+enum {
     PROP_0,
     PROP_ENABLE_ZRTP,
     PROP_LOCAL_SSRC,
@@ -135,61 +135,61 @@ enum
  * describe the real formats here.
  */
 static GstStaticPadTemplate zrtp_recv_rtcp_sink_template =
-GST_STATIC_PAD_TEMPLATE ("recv_rtcp_sink",
-                         GST_PAD_SINK,
-                         GST_PAD_ALWAYS,
-                         GST_STATIC_CAPS ("ANY")
-);
+    GST_STATIC_PAD_TEMPLATE ("recv_rtcp_sink",
+                             GST_PAD_SINK,
+                             GST_PAD_ALWAYS,
+                             GST_STATIC_CAPS ("ANY")
+                             );
 
 static GstStaticPadTemplate zrtp_recv_rtcp_src_template =
-GST_STATIC_PAD_TEMPLATE ("recv_rtcp_src",
-                         GST_PAD_SRC,
-                         GST_PAD_ALWAYS,
-                         GST_STATIC_CAPS ("ANY")
-);
+    GST_STATIC_PAD_TEMPLATE ("recv_rtcp_src",
+                             GST_PAD_SRC,
+                             GST_PAD_ALWAYS,
+                             GST_STATIC_CAPS ("ANY")
+                             );
 
 static GstStaticPadTemplate zrtp_recv_rtp_sink_template =
-GST_STATIC_PAD_TEMPLATE ("recv_rtp_sink",
-                         GST_PAD_SINK,
-                         GST_PAD_ALWAYS,
-                         GST_STATIC_CAPS ("ANY")
-);
+    GST_STATIC_PAD_TEMPLATE ("recv_rtp_sink",
+                             GST_PAD_SINK,
+                             GST_PAD_ALWAYS,
+                             GST_STATIC_CAPS ("ANY")
+                             );
 
 static GstStaticPadTemplate zrtp_recv_rtp_src_template =
-GST_STATIC_PAD_TEMPLATE ("recv_rtp_src",
-                         GST_PAD_SRC,
-                         GST_PAD_ALWAYS,
-                         GST_STATIC_CAPS ("ANY")
-);
+    GST_STATIC_PAD_TEMPLATE ("recv_rtp_src",
+                             GST_PAD_SRC,
+                             GST_PAD_ALWAYS,
+                             GST_STATIC_CAPS ("ANY")
+                             );
 
 
 static GstStaticPadTemplate zrtp_send_rtcp_sink_template =
-GST_STATIC_PAD_TEMPLATE ("send_rtcp_sink",
-                         GST_PAD_SINK,
-                         GST_PAD_ALWAYS,
-                         GST_STATIC_CAPS ("ANY")
-);
+    GST_STATIC_PAD_TEMPLATE ("send_rtcp_sink",
+                             GST_PAD_SINK,
+                             GST_PAD_ALWAYS,
+                             GST_STATIC_CAPS ("ANY")
+                             );
 
 static GstStaticPadTemplate zrtp_send_rtcp_src_template =
-GST_STATIC_PAD_TEMPLATE ("send_rtcp_src",
-                         GST_PAD_SRC,
-                         GST_PAD_ALWAYS,
-                         GST_STATIC_CAPS ("ANY")
-);
+    GST_STATIC_PAD_TEMPLATE ("send_rtcp_src",
+                             GST_PAD_SRC,
+                             GST_PAD_ALWAYS,
+                             GST_STATIC_CAPS ("ANY")
+                             );
 
 static GstStaticPadTemplate zrtp_send_rtp_sink_template =
-GST_STATIC_PAD_TEMPLATE ("send_rtp_sink",
-                         GST_PAD_SINK,
-                         GST_PAD_ALWAYS,
-                         GST_STATIC_CAPS ("ANY")
-);
+    GST_STATIC_PAD_TEMPLATE ("send_rtp_sink",
+                             GST_PAD_SINK,
+                             GST_PAD_ALWAYS,
+                             GST_STATIC_CAPS ("ANY")
+                             );
 
 static GstStaticPadTemplate zrtp_send_rtp_src_template =
-GST_STATIC_PAD_TEMPLATE ("send_rtp_src",
-                         GST_PAD_SRC,
-                         GST_PAD_ALWAYS,
-                         GST_STATIC_CAPS ("ANY")
-);
+    GST_STATIC_PAD_TEMPLATE ("send_rtp_src",
+                             GST_PAD_SRC,
+                             GST_PAD_ALWAYS,
+                             GST_STATIC_CAPS ("ANY")
+                             );
 
 
 GST_BOILERPLATE (GstZrtpFilter, gst_zrtp_filter, GstElement, GST_TYPE_ELEMENT);
@@ -206,7 +206,7 @@ static GstFlowReturn gst_zrtp_filter_chain_rtcp_up   (GstPad * pad, GstBuffer * 
 static GstFlowReturn gst_zrtp_filter_chain_rtcp_down (GstPad * pad, GstBuffer * buf);
 
 /*                                     1
-                              1234567890123456   */
+                                       1234567890123456   */
 static gchar clientId[] =    "GST ZRTP 2.1.0  ";
 
 static gboolean zrtp_initialize(GstZrtpFilter* filter, const gchar *zidFilename, gboolean autoEnable);
@@ -233,8 +233,7 @@ static void zrtp_signSAS(ZrtpContext* ctx, char* sas) ;
 static int32_t zrtp_checkSASSignature(ZrtpContext* ctx, char* sas) ;
 
 /* The callback function structure for ZRTP */
-static zrtp_Callbacks c_callbacks =
-{
+static zrtp_Callbacks c_callbacks = {
     &zrtp_sendDataZRTP,
     &zrtp_activateTimer,
     &zrtp_cancelTimer,
@@ -255,62 +254,210 @@ static zrtp_Callbacks c_callbacks =
 
 static guint gst_zrtp_filter_signals[LAST_SIGNAL] = { 0 };
 
+#define GST_TYPE_ZRTP_FILTER_MSG_SEVERITY (gst_zrtp_filter_msg_severity_get_type())
+static GType
+gst_zrtp_filter_msg_severity_get_type(void)
+{
+    static GType zrtpfilter_msg_severity_type = 0;
+    static const GEnumValue zrtpfilter_msg_severity[] = {
+        {zrtp_Info,      "Info", "Status and info message"},
+        {zrtp_Warning,   "Warning", " Warning message - security can be established"},
+        {zrtp_Severe,    "Severe", "Severe error, security will not be established"},
+        {zrtp_ZrtpError, "ZrtpError", "ZRTP error, security will not be established"},
+        {0, NULL, NULL},
+    };
+
+    if (!zrtpfilter_msg_severity_type) {
+        zrtpfilter_msg_severity_type =
+            g_enum_register_static ("GstZrtpMsgSeverity", zrtpfilter_msg_severity);
+    }
+    return zrtpfilter_msg_severity_type;
+}
+
+#define GST_TYPE_ZRTP_FILTER_INFO (gst_zrtp_filter_info_get_type())
+static GType
+gst_zrtp_filter_info_get_type(void)
+{
+    static GType zrtpfilter_info_type = 0;
+    static const GEnumValue zrtpfilter_info[] = {
+        {zrtp_InfoHelloReceived,      "InfoHelloReceived", "Hello received, preparing a Commit"},
+        {zrtp_InfoCommitDHGenerated,  "InfoCommitDHGenerated", "Commit: Generated a public DH key"},
+        {zrtp_InfoRespCommitReceived, "InfoRespCommitReceived", "Responder: Commit received, preparing DHPart1"},
+        {zrtp_InfoDH1DHGenerated,     "InfoDH1DHGenerated", "DH1Part: Generated a public DH key"},
+        {zrtp_InfoInitDH1Received,    "InfoInitDH1Received", "Initiator: DHPart1 received, preparing DHPart2"},
+        {zrtp_InfoRespDH2Received,    "InfoRespDH2Received", "Responder: DHPart2 received, preparing Confirm1"},
+        {zrtp_InfoInitConf1Received,  "InfoInitConf1Received", "Initiator: Confirm1 received, preparing Confirm2"},
+        {zrtp_InfoRespConf2Received,  "InfoRespConf2Received", "Responder: Confirm2 received, preparing Conf2Ack"},
+        {zrtp_InfoRSMatchFound,       "InfoRSMatchFound", "At least one retained secrets matches - forward security OK"},
+        {zrtp_InfoSecureStateOn,      "InfoSecureStateOn", "Entered secure state"},
+        {zrtp_InfoSecureStateOff,     "InfoSecureStateOff", "No more security for this session"},
+        {0, NULL, NULL},
+    };
+
+    if (!zrtpfilter_info_type) {
+        zrtpfilter_info_type =
+            g_enum_register_static ("GstZrtpInfo", zrtpfilter_info);
+    }
+    return zrtpfilter_info_type;
+}
+
+#define GST_TYPE_ZRTP_FILTER_WARNING (gst_zrtp_filter_warning_get_type())
+static GType
+gst_zrtp_filter_warning_get_type(void)
+{
+    static GType zrtpfilter_warning_type = 0;
+    static const GEnumValue zrtpfilter_warning[] = {
+        {zrtp_WarningDHAESmismatch,     "WarningDHAESmismatch", "Commit contains an AES256 cipher but does not offer a Diffie-Helman 4096"},
+        {zrtp_WarningGoClearReceived,   "WarningGoClearReceived", "Received a GoClear message"},
+        {zrtp_WarningDHShort,           "WarningDHShort", "Hello offers an AES256 cipher but does not offer a Diffie-Helman 4096"},
+        {zrtp_WarningNoRSMatch,         "WarningNoRSMatch", "No retained shared secrets available - must verify SAS"},
+        {zrtp_WarningCRCmismatch,       "WarningCRCmismatch", "Internal ZRTP packet checksum mismatch - packet dropped"},
+        {zrtp_WarningSRTPauthError,     "WarningSRTPauthError", "Dropping packet because SRTP authentication failed!"},
+        {zrtp_WarningSRTPreplayError,   "WarningSRTPreplayError", "Dropping packet because SRTP replay check failed!"},
+        {zrtp_WarningNoExpectedRSMatch, "WarningNoExpectedRSMatch", "Valid retained shared secrets availabe but no matches found - must verify SAS"},
+        {0, NULL, NULL},
+    };
+
+    if (!zrtpfilter_warning_type) {
+        zrtpfilter_warning_type =
+            g_enum_register_static ("GstZrtpWarning", zrtpfilter_warning);
+    }
+    return zrtpfilter_warning_type;
+}
+
+#define GST_TYPE_ZRTP_FILTER_SEVERE (gst_zrtp_filter_severe_get_type())
+static GType
+gst_zrtp_filter_severe_get_type(void)
+{
+    static GType zrtpfilter_severe_type = 0;
+    static const GEnumValue zrtpfilter_severe[] = {
+        {zrtp_SevereHelloHMACFailed,  "SevereHelloHMACFailed", "Hash HMAC check of Hello failed!"},
+        {zrtp_SevereCommitHMACFailed, "SevereCommitHMACFailed", "Hash HMAC check of Commit failed"},
+        {zrtp_SevereDH1HMACFailed,    "SevereDH1HMACFailed", "Hash HMAC check of DHPart1 failed!"},
+        {zrtp_SevereDH2HMACFailed,    "SevereDH2HMACFailed", "Hash HMAC check of DHPart2 failed!"},
+        {zrtp_SevereCannotSend,       "SevereCannotSend", "Cannot send data - connection or peer down?"},
+        {zrtp_SevereProtocolError,    "SevereProtocolError", "Internal protocol error occured!"},
+        {zrtp_SevereNoTimer,          "SevereNoTimer", "Cannot start a timer - internal resources exhausted?"},
+        {zrtp_SevereTooMuchRetries,   "SevereTooMuchRetries", "Too much retries during ZRTP negotiation - connection or peer down?"},
+        {0, NULL, NULL},
+    };
+
+    if (!zrtpfilter_severe_type) {
+        zrtpfilter_severe_type =
+            g_enum_register_static ("GstZrtpSevere", zrtpfilter_severe);
+    }
+    return zrtpfilter_severe_type;
+}
+
+#define GST_TYPE_ZRTP_FILTER_ERROR (gst_zrtp_filter_error_get_type())
+static GType
+gst_zrtp_filter_error_get_type(void)
+{
+    static GType zrtpfilter_error_type = 0;
+    static const GEnumValue zrtpfilter_error[] = {
+        {zrtp_MalformedPacket,   "MalformedPacket", "Malformed packet (CRC OK, but wrong structure)"},
+        {zrtp_CriticalSWError,   "CriticalSWError", "Critical software error"},
+        {zrtp_UnsuppZRTPVersion, "UnsuppZRTPVersion", "Unsupported ZRTP version"},
+        {zrtp_HelloCompMismatch, "HelloCompMismatch", "Hello components mismatch"},
+        {zrtp_UnsuppHashType,    "UnsuppHashType", "Hash type not supported"},
+        {zrtp_UnsuppCiphertype,  "UnsuppCiphertype", "Cipher type not supported"},
+        {zrtp_UnsuppPKExchange,  "UnsuppPKExchange", "Public key exchange not supported"},
+        {zrtp_UnsuppSRTPAuthTag, "UnsuppSRTPAuthTag", "SRTP auth. tag not supported"},
+        {zrtp_UnsuppSASScheme,   "UnsuppSASScheme", "SAS scheme not supported"},
+        {zrtp_NoSharedSecret,    "NoSharedSecret", "No shared secret available, DH mode required"},
+        {zrtp_DHErrorWrongPV,    "DHErrorWrongPV", "DH Error: bad pvi or pvr ( == 1, 0, or p-1)"},
+        {zrtp_DHErrorWrongHVI,   "DHErrorWrongHVI", "DH Error: hvi != hashed data"},
+        {zrtp_SASuntrustedMiTM,  "SASuntrustedMiTM", "Received relayed SAS from untrusted MiTM"},
+        {zrtp_ConfirmHMACWrong,  "ConfirmHMACWrong", "Auth. Error: Bad Confirm pkt HMAC"},
+        {zrtp_NonceReused,       "NonceReused", "Nonce reuse"},
+        {zrtp_EqualZIDHello,     "EqualZIDHello", "Equal ZIDs in Hello"},
+        {zrtp_GoCleatNotAllowed, "GoCleatNotAllowed", "GoClear packet received, but not allowed"},
+        {0, NULL, NULL},
+    };
+
+    if (!zrtpfilter_error_type) {
+        zrtpfilter_error_type =
+            g_enum_register_static ("GstZrtpError", zrtpfilter_error);
+    }
+    return zrtpfilter_error_type;
+}
+
+#define GST_TYPE_ZRTP_FILTER_ENROLLMENT (gst_zrtp_filter_enrollment_get_type())
+static GType
+gst_zrtp_filter_enrollment_get_type(void)
+{
+    static GType zrtpfilter_enrollment_type = 0;
+    static const GEnumValue zrtpfilter_enrollment[] = {
+        {zrtp_EnrollmentRequest,  "EnrollmentRequest", "Aks user to confirm or deny an Enrollemnt request"},
+        {zrtp_EnrollmentCanceled, "EnrollmentCanceled", "User did not confirm the PBX enrollement"},
+        {zrtp_EnrollmentFailed,   "EnrollmentFailed", "Enrollment process failed, no PBX secret available"},
+        {zrtp_EnrollmentOk,       "EnrollmentOk", "Enrollment process for this PBX was ok"},
+        {0, NULL, NULL},
+    };
+
+    if (!zrtpfilter_enrollment_type) {
+        zrtpfilter_enrollment_type =
+            g_enum_register_static ("GstZrtpInfoEnrollment", zrtpfilter_enrollment);
+    }
+    return zrtpfilter_enrollment_type;
+}
+
 /* Marshalls two gint to application signal callback */
 static void
-marshal_VOID__INT_INT (GClosure * closure, GValue * return_value,
-    guint n_param_values, const GValue* param_values, gpointer invocation_hint,
-    gpointer marshal_data)
+marshal_VOID__INT_INT(GClosure * closure, GValue * return_value,
+                       guint n_param_values, const GValue* param_values, gpointer invocation_hint,
+                       gpointer marshal_data)
 {
-  typedef void (*marshalfunc_VOID__MINIOBJECT_OBJECT) (gpointer obj, gint arg1, gint arg2, gpointer data2);
+    typedef void (*marshalfunc_VOID__MINIOBJECT_OBJECT) (gpointer obj, gint arg1, gint arg2, gpointer data2);
 
-  register marshalfunc_VOID__MINIOBJECT_OBJECT callback;
-  register GCClosure *cc = (GCClosure *) closure;
-  register gpointer data1, data2;
+    register marshalfunc_VOID__MINIOBJECT_OBJECT callback;
+    register GCClosure *cc = (GCClosure *) closure;
+    register gpointer data1, data2;
 
-  g_return_if_fail (n_param_values == 3);
+    g_return_if_fail (n_param_values == 3);
 
-  if (G_CCLOSURE_SWAP_DATA(closure)) {
-    data1 = closure->data;
-    data2 = g_value_peek_pointer(param_values + 0);
-  } else {
-    data1 = g_value_peek_pointer(param_values + 0);
-    data2 = closure->data;
-  }
-  callback = (marshalfunc_VOID__MINIOBJECT_OBJECT)(marshal_data ? marshal_data : cc->callback);
+    if (G_CCLOSURE_SWAP_DATA(closure)) {
+        data1 = closure->data;
+        data2 = g_value_peek_pointer(param_values + 0);
+    } else {
+        data1 = g_value_peek_pointer(param_values + 0);
+        data2 = closure->data;
+    }
+    callback = (marshalfunc_VOID__MINIOBJECT_OBJECT)(marshal_data ? marshal_data : cc->callback);
 
-  callback (data1, g_value_get_int(param_values + 1), g_value_get_int(param_values + 2), data2);
+    callback (data1, g_value_get_int(param_values + 1), g_value_get_int(param_values + 2), data2);
 }
 
 /* Marshalls one gchar* and one gint to application signal callback */
 static void
-marshal_VOID__STRING_INT (GClosure * closure, GValue * return_value,
-    guint n_param_values, const GValue * param_values, gpointer invocation_hint,
-    gpointer marshal_data)
+marshal_VOID__STRING_INT(GClosure * closure, GValue * return_value,
+                          guint n_param_values, const GValue * param_values, gpointer invocation_hint,
+                          gpointer marshal_data)
 {
-  typedef void (*marshalfunc_VOID__MINIOBJECT_OBJECT) (gpointer obj, const gchar* arg1, gint arg2, gpointer data2);
+    typedef void (*marshalfunc_VOID__MINIOBJECT_OBJECT) (gpointer obj, const gchar* arg1, gint arg2, gpointer data2);
 
-  register marshalfunc_VOID__MINIOBJECT_OBJECT callback;
-  register GCClosure *cc = (GCClosure *) closure;
-  register gpointer data1, data2;
+    register marshalfunc_VOID__MINIOBJECT_OBJECT callback;
+    register GCClosure *cc = (GCClosure *) closure;
+    register gpointer data1, data2;
 
-  g_return_if_fail (n_param_values == 3);
+    g_return_if_fail (n_param_values == 3);
 
-  if (G_CCLOSURE_SWAP_DATA(closure)) {
-    data1 = closure->data;
-    data2 = g_value_peek_pointer(param_values + 0);
-  } else {
-    data1 = g_value_peek_pointer(param_values + 0);
-    data2 = closure->data;
-  }
-  callback = (marshalfunc_VOID__MINIOBJECT_OBJECT)(marshal_data ? marshal_data : cc->callback);
+    if (G_CCLOSURE_SWAP_DATA(closure)) {
+        data1 = closure->data;
+        data2 = g_value_peek_pointer(param_values + 0);
+    } else {
+        data1 = g_value_peek_pointer(param_values + 0);
+        data2 = closure->data;
+    }
+    callback = (marshalfunc_VOID__MINIOBJECT_OBJECT)(marshal_data ? marshal_data : cc->callback);
 
-  callback (data1, g_value_get_string(param_values + 1), g_value_get_int(param_values + 2), data2);
+    callback (data1, g_value_get_string(param_values + 1), g_value_get_int(param_values + 2), data2);
 }
 
 /* GObject vmethod implementations */
 
 static void
-gst_zrtp_filter_base_init (gpointer gclass)
+gst_zrtp_filter_base_init(gpointer gclass)
 {
     GstElementClass *element_class = GST_ELEMENT_CLASS (gclass);
 
@@ -333,13 +480,13 @@ gst_zrtp_filter_base_init (gpointer gclass)
 
 /* initialize the zrtpfilter's class */
 static void
-gst_zrtp_filter_class_init (GstZrtpFilterClass * klass)
+gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
 {
     GObjectClass *gobject_class;
-//    GstElementClass *gstelement_class;
+    //    GstElementClass *gstelement_class;
 
     gobject_class = (GObjectClass *) klass;
-//    gstelement_class = (GstElementClass *) klass;
+    //    gstelement_class = (GstElementClass *) klass;
 
     gobject_class->finalize = gst_zrtp_filter_finalize;
     gobject_class->set_property = gst_zrtp_filter_set_property;
@@ -347,168 +494,174 @@ gst_zrtp_filter_class_init (GstZrtpFilterClass * klass)
 
     g_object_class_install_property (gobject_class, PROP_ENABLE_ZRTP,
                                      g_param_spec_boolean ("enable", "Enable", "Enable ZRTP processing.",
-                                     FALSE, G_PARAM_READWRITE));
+                                                           FALSE, G_PARAM_READWRITE));
 
     g_object_class_install_property (gobject_class, PROP_LOCAL_SSRC,
                                      g_param_spec_uint("local-ssrc", "LocalSSRC", "Set local SSRC if it cannot be determined.",
-                                                         1, 0xffffffff, 1, G_PARAM_READWRITE));
+                                                       1, 0xffffffff, 1, G_PARAM_READWRITE));
 
     g_object_class_install_property (gobject_class, PROP_MITM_MODE,
                                      g_param_spec_boolean ("set-mitm-mode", "MITM", "Enable MitM (PBX) enrollment.",
-                                     FALSE, G_PARAM_READWRITE));
+                                                           FALSE, G_PARAM_READWRITE));
 
     g_object_class_install_property (gobject_class, PROP_CACHE_NAME,
                                      g_param_spec_string("cache-name", "Cache", "ZRTP cache filename.",
-                                     NULL, G_PARAM_READWRITE));
+                                                         NULL, G_PARAM_READWRITE));
 
     g_object_class_install_property (gobject_class, PROP_INITALIZE,
                                      g_param_spec_boolean ("initialize", "Initialize", "Initialize ZRTP engine and enable.",
-                                     FALSE, G_PARAM_WRITABLE));
+                                                           FALSE, G_PARAM_WRITABLE));
 
     g_object_class_install_property (gobject_class, PROP_START,
                                      g_param_spec_boolean ("start", "Start", "Start ZRTP engine explicitly.",
-                                     FALSE, G_PARAM_READWRITE));
+                                                           FALSE, G_PARAM_READWRITE));
 
-/* Don't stop manually, will be done when GStreamer calls the finalize function.'
- *    g_object_class_install_property (gobject_class, PROP_STOP,
- *                                    g_param_spec_boolean ("stop", "Stop", "Stop ZRTP engine explicitly.",
- *                                    FALSE, G_PARAM_WRITABLE));
- */
+    /* Don't stop manually, will be done when GStreamer calls the finalize function.'
+     *    g_object_class_install_property (gobject_class, PROP_STOP,
+     *                                    g_param_spec_boolean ("stop", "Stop", "Stop ZRTP engine explicitly.",
+     *                                    FALSE, G_PARAM_WRITABLE));
+     */
 
     g_object_class_install_property (gobject_class, PROP_MULTI_PARAM,
                                      g_param_spec_boxed("multi-param", "Multiparam", "Get or Set multi-stream parameters.",
-                                     G_TYPE_BYTE_ARRAY, G_PARAM_READWRITE));
+                                                        G_TYPE_BYTE_ARRAY, G_PARAM_READWRITE));
 
     g_object_class_install_property (gobject_class, PROP_IS_MULTI,
                                      g_param_spec_boolean("is-multi", "IsMulti", "Check if this is a multi-stream session.",
-                                     FALSE, G_PARAM_READABLE));
+                                                          FALSE, G_PARAM_READABLE));
 
     g_object_class_install_property (gobject_class, PROP_MULTI_AVAILABLE,
                                      g_param_spec_boolean("multi-available", "MultiAvailable",
                                                           "Check if master session supports multi-stream mode.",
                                                           FALSE, G_PARAM_READABLE));
-  /**
-   * zrtpfilter::status:
-   * @zrtpfilter: the zrtpfilter instance
-   * @severity: the sevrity of the status information
-   * @subcode: information subcode
-   *
-   * This signal gets emitted when ZRTP calls send_info callback.
-   */
-  gst_zrtp_filter_signals[SIGNAL_STATUS] =
-      g_signal_new ("status", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-      G_STRUCT_OFFSET (GstZrtpFilterClass, sendInfo), NULL, NULL,
-      marshal_VOID__INT_INT, G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
+    /**
+     * zrtpfilter::status:
+     * @zrtpfilter: the zrtpfilter instance
+     * @severity: the sevrity of the status information
+     * @subcode: information subcode
+     *
+     * This signal gets emitted when ZRTP calls send_info callback.
+     */
+    gst_zrtp_filter_signals[SIGNAL_STATUS] =
+        g_signal_new ("status", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+                      G_STRUCT_OFFSET (GstZrtpFilterClass, sendInfo), NULL, NULL,
+                      marshal_VOID__INT_INT, G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
 
-  /**
-   * zrtpfilter::sas:
-   * @zrtpfilter: the zrtpfilter instance
-   * @sas: the sas string
-   * @verified: boolean, true if SAS was verfied in a previous session, false otherwise
-   *
-   * This signal gets emitted when ZRTP calls secretsOn callback.
-   */
-  gst_zrtp_filter_signals[SIGNAL_SAS] =
-      g_signal_new ("sas", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-      G_STRUCT_OFFSET (GstZrtpFilterClass, sas), NULL, NULL,
-      marshal_VOID__STRING_INT, G_TYPE_NONE, 2, G_TYPE_STRING, G_TYPE_INT);
+    /**
+     * zrtpfilter::sas:
+     * @zrtpfilter: the zrtpfilter instance
+     * @sas: the sas string
+     * @verified: boolean, true if SAS was verfied in a previous session, false otherwise
+     *
+     * This signal gets emitted when ZRTP calls secretsOn callback.
+     */
+    gst_zrtp_filter_signals[SIGNAL_SAS] =
+        g_signal_new ("sas", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+                      G_STRUCT_OFFSET (GstZrtpFilterClass, sas), NULL, NULL,
+                      marshal_VOID__STRING_INT, G_TYPE_NONE, 2, G_TYPE_STRING, G_TYPE_INT);
 
-  /**
-   * zrtpfilter::algorithm:
-   * @zrtpfilter: the zrtpfilter instance
-   * @algorithm: the human readabe negotiated enryption and authentication algorithms
-   *
-   * This signal gets emitted when ZRTP calls secretsOn callback.
-   */
-  gst_zrtp_filter_signals[SIGNAL_ALGORITHM] =
-      g_signal_new("algorithm", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-      G_STRUCT_OFFSET (GstZrtpFilterClass, algorithm), NULL, NULL,
-      g_cclosure_marshal_VOID__STRING, G_TYPE_NONE, 1, G_TYPE_STRING);
+    /**
+     * zrtpfilter::algorithm:
+     * @zrtpfilter: the zrtpfilter instance
+     * @algorithm: the human readabe negotiated enryption and authentication algorithms
+     *
+     * This signal gets emitted when ZRTP calls secretsOn callback.
+     */
+    gst_zrtp_filter_signals[SIGNAL_ALGORITHM] =
+        g_signal_new("algorithm", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET (GstZrtpFilterClass, algorithm), NULL, NULL,
+                     g_cclosure_marshal_VOID__STRING, G_TYPE_NONE, 1, G_TYPE_STRING);
 
-  /**
-   * zrtpfilter::secure-off:
-   * @zrtpfilter: the zrtpfilter instance
-   *
-   * This signal gets emitted when ZRTP calls secretsOff callback.
-   */
-  gst_zrtp_filter_signals[SIGNAL_SECURITY_OFF] =
-      g_signal_new("security-off", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-      G_STRUCT_OFFSET (GstZrtpFilterClass, secureOff), NULL, NULL,
-      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+    /**
+     * zrtpfilter::secure-off:
+     * @zrtpfilter: the zrtpfilter instance
+     *
+     * This signal gets emitted when ZRTP calls secretsOff callback.
+     */
+    gst_zrtp_filter_signals[SIGNAL_SECURITY_OFF] =
+        g_signal_new("security-off", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET (GstZrtpFilterClass, secureOff), NULL, NULL,
+                     g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
-  /**
-   * zrtpfilter::negotiation:
-   * @zrtpfilter: the zrtpfilter instance
-   * @severity: the sevrity of the fail information
-   * @subcode: information subcode
-   *
-   * This signal gets emitted when ZRTP calls negotiation failed callback.
-   */
-  gst_zrtp_filter_signals[SIGNAL_NEGOTIATION] =
-      g_signal_new("negotiation", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-      G_STRUCT_OFFSET(GstZrtpFilterClass, negotiation), NULL, NULL,
-      marshal_VOID__INT_INT, G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
+    /**
+     * zrtpfilter::negotiation:
+     * @zrtpfilter: the zrtpfilter instance
+     * @severity: the sevrity of the fail information
+     * @subcode: information subcode
+     *
+     * This signal gets emitted when ZRTP calls negotiation failed callback.
+     */
+    gst_zrtp_filter_signals[SIGNAL_NEGOTIATION] =
+        g_signal_new("negotiation", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET(GstZrtpFilterClass, negotiation), NULL, NULL,
+                     marshal_VOID__INT_INT, G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
 
-  /**
-   * zrtpfilter::not-support:
-   * @zrtpfilter: the zrtpfilter instance
-   *
-   * This signal gets emitted when ZRTP calls not supported callback.
-   */
-  gst_zrtp_filter_signals[SIGNAL_NOT_SUPP] =
-      g_signal_new("not-supported", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-      G_STRUCT_OFFSET (GstZrtpFilterClass, noSupport), NULL, NULL,
-      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+    /**
+     * zrtpfilter::not-support:
+     * @zrtpfilter: the zrtpfilter instance
+     *
+     * This signal gets emitted when ZRTP calls not supported callback.
+     */
+    gst_zrtp_filter_signals[SIGNAL_NOT_SUPP] =
+        g_signal_new("not-supported", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET (GstZrtpFilterClass, noSupport), NULL, NULL,
+                     g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+    
+    /**
+     * zrtpfilter::ask-enrollment:
+     * @zrtpfilter: the zrtpfilter instance
+     * @info: the enrollment information code
+     *
+     * This signal gets emitted when ZRTP calls askEnrollment callback.
+     */
+    gst_zrtp_filter_signals[SIGNAL_ASK_ENROLL] =
+        g_signal_new("ask-enrollment", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET (GstZrtpFilterClass, askEnroll), NULL, NULL,
+                     g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
-  /**
-   * zrtpfilter::ask-enrollment:
-   * @zrtpfilter: the zrtpfilter instance
-   * @info: the enrollment information code
-   *
-   * This signal gets emitted when ZRTP calls askEnrollment callback.
-   */
-  gst_zrtp_filter_signals[SIGNAL_ASK_ENROLL] =
-      g_signal_new("ask-enrollment", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-      G_STRUCT_OFFSET (GstZrtpFilterClass, askEnroll), NULL, NULL,
-      g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
+    /**
+     * zrtpfilter::inform-enrollment:
+     * @zrtpfilter: the zrtpfilter instance
+     * @info: the enrollment information code
+     *
+     * This signal gets emitted when ZRTP calls informEnrollment callback.
+     */
+    gst_zrtp_filter_signals[SIGNAL_INFORM_ENROLL] =
+        g_signal_new("inform-enrollment", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET (GstZrtpFilterClass, askEnroll), NULL, NULL,
+                     g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
-  /**
-   * zrtpfilter::inform-enrollment:
-   * @zrtpfilter: the zrtpfilter instance
-   * @info: the enrollment information code
-   *
-   * This signal gets emitted when ZRTP calls askEnrollment callback.
-   */
-  gst_zrtp_filter_signals[SIGNAL_INFORM_ENROLL] =
-      g_signal_new("inform-enrollment", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-      G_STRUCT_OFFSET (GstZrtpFilterClass, askEnroll), NULL, NULL,
-      g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
+    /*
+     * zrtpfilter::sign-sas: - not yet implemented
+     * @zrtpfilter: the zrtpfilter instance
+     * @info: the enrollment information code
+     *
+     * This signal gets emitted when ZRTP calls askEnrollment callback.
+     */
+    //   gst_zrtp_filter_signals[SIGNAL_SIGN_SAS] =
+    //       g_signal_new("sign-sas", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+    //       G_STRUCT_OFFSET (GstZrtpFilterClass, signSas), NULL, NULL,
+    //       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
-
-  /**
-   * zrtpfilter::sign-sas: - not yet implemented
-   * @zrtpfilter: the zrtpfilter instance
-   * @info: the enrollment information code
-   *
-   * This signal gets emitted when ZRTP calls askEnrollment callback.
-   */
-//   gst_zrtp_filter_signals[SIGNAL_SIGN_SAS] =
-//       g_signal_new("sign-sas", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-//       G_STRUCT_OFFSET (GstZrtpFilterClass, signSas), NULL, NULL,
-//       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
-
-  /**
-   * zrtpfilter::check-sas-sign: - not yet implemented
-   * @zrtpfilter: the zrtpfilter instance
-   * @info: the enrollment information code
-   *
-   * This signal gets emitted when ZRTP calls askEnrollment callback.
-   */
-//   gst_zrtp_filter_signals[SIGNAL_CHECK_SAS_SIGN] =
-//       g_signal_new("check-sas-sign", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-//       G_STRUCT_OFFSET (GstZrtpFilterClass, sasCheckSign), NULL, NULL,
-//       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
-
+    /*
+     * zrtpfilter::check-sas-sign: - not yet implemented
+     * @zrtpfilter: the zrtpfilter instance
+     * @info: the enrollment information code
+     *
+     * This signal gets emitted when ZRTP calls askEnrollment callback.
+     */
+    //   gst_zrtp_filter_signals[SIGNAL_CHECK_SAS_SIGN] =
+    //       g_signal_new("check-sas-sign", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+    //       G_STRUCT_OFFSET (GstZrtpFilterClass, sasCheckSign), NULL, NULL,
+    //       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
+    
+    /* Install enums and make them available for applications */
+    GST_TYPE_ZRTP_FILTER_MSG_SEVERITY;
+    GST_TYPE_ZRTP_FILTER_INFO;
+    GST_TYPE_ZRTP_FILTER_WARNING;
+    GST_TYPE_ZRTP_FILTER_SEVERE;
+    GST_TYPE_ZRTP_FILTER_ERROR;
+    GST_TYPE_ZRTP_FILTER_ENROLLMENT;
 }
 
 /* initialize the new element
@@ -517,8 +670,7 @@ gst_zrtp_filter_class_init (GstZrtpFilterClass * klass)
  * initialize instance structure
  */
 static void
-gst_zrtp_filter_init (GstZrtpFilter * filter,
-                      GstZrtpFilterClass * gclass)
+gst_zrtp_filter_init(GstZrtpFilter * filter, GstZrtpFilterClass * gclass)
 {
     /* At first initialize the non-pad stuff  */
     /* Create the empty wrapper */
@@ -536,12 +688,12 @@ gst_zrtp_filter_init (GstZrtpFilter * filter,
     // TODO: caps setter, getter checks?
     // Initialize the receive (upstream) RTP data path
     filter->recv_rtp_sink = gst_pad_new_from_static_template (&zrtp_recv_rtp_sink_template, "recv_rtp_sink");
-//     gst_pad_set_setcaps_function (filter->recv_rtp_sink, GST_DEBUG_FUNCPTR(gst_zrtp_filter_set_caps));
-//     gst_pad_set_getcaps_function (filter->recv_rtp_sink, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
+    //     gst_pad_set_setcaps_function (filter->recv_rtp_sink, GST_DEBUG_FUNCPTR(gst_zrtp_filter_set_caps));
+    //     gst_pad_set_getcaps_function (filter->recv_rtp_sink, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
     gst_pad_set_chain_function   (filter->recv_rtp_sink, GST_DEBUG_FUNCPTR(gst_zrtp_filter_chain_rtp_up));
 
     filter->recv_rtp_src = gst_pad_new_from_static_template (&zrtp_recv_rtp_src_template, "recv_rtp_src");
-//     gst_pad_set_getcaps_function (filter->recv_rtp_src, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
+    //     gst_pad_set_getcaps_function (filter->recv_rtp_src, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
 
     gst_element_add_pad (GST_ELEMENT (filter), filter->recv_rtp_sink);
     gst_element_add_pad (GST_ELEMENT (filter), filter->recv_rtp_src);
@@ -549,12 +701,12 @@ gst_zrtp_filter_init (GstZrtpFilter * filter,
 
     // Initialize the send (downstream) RTP data path
     filter->send_rtp_sink = gst_pad_new_from_static_template (&zrtp_send_rtp_sink_template, "send_rtp_sink");
-//     gst_pad_set_setcaps_function (filter->send_rtp_sink, GST_DEBUG_FUNCPTR(gst_zrtp_filter_set_caps));
-//     gst_pad_set_getcaps_function (filter->send_rtp_sink, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
+    //     gst_pad_set_setcaps_function (filter->send_rtp_sink, GST_DEBUG_FUNCPTR(gst_zrtp_filter_set_caps));
+    //     gst_pad_set_getcaps_function (filter->send_rtp_sink, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
     gst_pad_set_chain_function   (filter->send_rtp_sink, GST_DEBUG_FUNCPTR(gst_zrtp_filter_chain_rtp_down));
 
     filter->send_rtp_src = gst_pad_new_from_static_template (&zrtp_send_rtp_src_template, "send_rtp_src");
-//     gst_pad_set_getcaps_function (filter->send_rtp_src, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
+    //     gst_pad_set_getcaps_function (filter->send_rtp_src, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
 
     gst_element_add_pad (GST_ELEMENT (filter), filter->send_rtp_sink);
     gst_element_add_pad (GST_ELEMENT (filter), filter->send_rtp_src);
@@ -562,12 +714,12 @@ gst_zrtp_filter_init (GstZrtpFilter * filter,
 
     // Initialize the receive (upstream) RTCP data path
     filter->recv_rtcp_sink = gst_pad_new_from_static_template (&zrtp_recv_rtcp_sink_template, "recv_rtcp_sink");
-//     gst_pad_set_setcaps_function (filter->recv_rtcp_sink, GST_DEBUG_FUNCPTR(gst_zrtp_filter_set_caps));
-//     gst_pad_set_getcaps_function (filter->recv_rtcp_sink, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
+    //     gst_pad_set_setcaps_function (filter->recv_rtcp_sink, GST_DEBUG_FUNCPTR(gst_zrtp_filter_set_caps));
+    //     gst_pad_set_getcaps_function (filter->recv_rtcp_sink, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
     gst_pad_set_chain_function (filter->recv_rtcp_sink, GST_DEBUG_FUNCPTR(gst_zrtp_filter_chain_rtcp_up));
 
     filter->recv_rtcp_src = gst_pad_new_from_static_template (&zrtp_recv_rtcp_src_template, "recv_rtcp_src");
-//     gst_pad_set_getcaps_function (filter->recv_rtcp_src, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
+    //     gst_pad_set_getcaps_function (filter->recv_rtcp_src, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
 
     gst_element_add_pad (GST_ELEMENT (filter), filter->recv_rtcp_sink);
     gst_element_add_pad (GST_ELEMENT (filter), filter->recv_rtcp_src);
@@ -575,12 +727,12 @@ gst_zrtp_filter_init (GstZrtpFilter * filter,
 
     // Initialize the send (downstream) RTCP data path
     filter->send_rtcp_sink = gst_pad_new_from_static_template (&zrtp_send_rtcp_sink_template, "send_rtcp_sink");
-//    gst_pad_set_setcaps_function (filter->send_rtcp_sink, GST_DEBUG_FUNCPTR(gst_zrtp_filter_set_caps));
-//    gst_pad_set_getcaps_function (filter->send_rtcp_sink, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
+    //    gst_pad_set_setcaps_function (filter->send_rtcp_sink, GST_DEBUG_FUNCPTR(gst_zrtp_filter_set_caps));
+    //    gst_pad_set_getcaps_function (filter->send_rtcp_sink, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
     gst_pad_set_chain_function (filter->send_rtcp_sink, GST_DEBUG_FUNCPTR(gst_zrtp_filter_chain_rtcp_down));
 
     filter->send_rtcp_src = gst_pad_new_from_static_template (&zrtp_send_rtcp_src_template, "send_rtcp_src");
-//    gst_pad_set_getcaps_function (filter->send_rtcp_src, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
+    //    gst_pad_set_getcaps_function (filter->send_rtcp_src, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
 
     gst_element_add_pad (GST_ELEMENT (filter), filter->send_rtcp_sink);
     gst_element_add_pad (GST_ELEMENT (filter), filter->send_rtcp_src);
@@ -595,46 +747,46 @@ gst_zrtp_filter_set_property (GObject* object, guint prop_id,
 
     GST_DEBUG_OBJECT(filter, "set property '%s', value: ", g_param_spec_get_name(pspec));
     switch (prop_id) {
-        case PROP_ENABLE_ZRTP:
-            filter->enableZrtp = g_value_get_boolean(value);
-            GST_DEBUG("%s", filter->enableZrtp ? "TRUE" : "FALSE");
+    case PROP_ENABLE_ZRTP:
+        filter->enableZrtp = g_value_get_boolean(value);
+        GST_DEBUG("%s", filter->enableZrtp ? "TRUE" : "FALSE");
+        break;
+    case PROP_LOCAL_SSRC:
+        filter->localSSRC = g_value_get_uint(value);
+        GST_DEBUG("%x", filter->localSSRC);
+        break;
+    case PROP_MITM_MODE:
+        filter->mitmMode = g_value_get_boolean(value);
+        GST_DEBUG("%s", filter->mitmMode ? "TRUE" : "FALSE");
+        break;
+    case PROP_CACHE_NAME:
+        g_free(filter->cacheName);
+        filter->cacheName = g_value_dup_string(value);
+        GST_DEBUG("'%s'", filter->cacheName);
+        break;
+    case PROP_INITALIZE:
+        GST_DEBUG("%s", g_value_get_boolean(value) ? "TRUE" : "FALSE");
+        zrtp_initialize(filter, filter->cacheName, g_value_get_boolean(value));
+        break;
+    case PROP_START:
+        zrtp_filter_startZrtp(filter);
+        break;
+        /*        case PROP_STOP:
+                  zrtp_filter_stopZrtp(filter);
+                  break;
+        */
+    case PROP_MULTI_PARAM:
+        mspArr = g_value_get_boxed(value);
+        if (filter->gotMultiParam) {
+            GST_ERROR_OBJECT(filter, "Cannot set multi-stream parameters on master ZRTP session.\n");
             break;
-        case PROP_LOCAL_SSRC:
-            filter->localSSRC = g_value_get_uint(value);
-            GST_DEBUG("%x", filter->localSSRC);
-            break;
-        case PROP_MITM_MODE:
-            filter->mitmMode = g_value_get_boolean(value);
-            GST_DEBUG("%s", filter->mitmMode ? "TRUE" : "FALSE");
-            break;
-        case PROP_CACHE_NAME:
-            g_free(filter->cacheName);
-            filter->cacheName = g_value_dup_string(value);
-            GST_DEBUG("'%s'", filter->cacheName);
-            break;
-        case PROP_INITALIZE:
-            GST_DEBUG("%s", g_value_get_boolean(value) ? "TRUE" : "FALSE");
-            zrtp_initialize(filter, filter->cacheName, g_value_get_boolean(value));
-            break;
-        case PROP_START:
-            zrtp_filter_startZrtp(filter);
-            break;
-/*        case PROP_STOP:
-            zrtp_filter_stopZrtp(filter);
-            break;
- */
-        case PROP_MULTI_PARAM:
-            mspArr = g_value_get_boxed(value);
-            if (filter->gotMultiParam) {
-                GST_ERROR_OBJECT(filter, "Cannot set multi-stream parameters on master ZRTP session.\n");
-                break;
-             }
-            GST_DEBUG("%p, length: %d", mspArr->data, mspArr->len);
-            zrtp_setMultiStrParams(filter->zrtpCtx, (char*)mspArr->data, mspArr->len);
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-            break;
+        }
+        GST_DEBUG("%p, length: %d", mspArr->data, mspArr->len);
+        zrtp_setMultiStrParams(filter->zrtpCtx, (char*)mspArr->data, mspArr->len);
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        break;
     }
 }
 
@@ -647,45 +799,45 @@ gst_zrtp_filter_get_property (GObject * object, guint prop_id,
     gpointer param;
 
     switch (prop_id) {
-        case PROP_ENABLE_ZRTP:
-            g_value_set_boolean(value, filter->enableZrtp);
+    case PROP_ENABLE_ZRTP:
+        g_value_set_boolean(value, filter->enableZrtp);
+        break;
+    case PROP_LOCAL_SSRC:
+        g_value_set_uint(value, filter->localSSRC);
+        break;
+    case PROP_MITM_MODE:
+        g_value_set_boolean(value, filter->mitmMode);
+        break;
+    case PROP_CACHE_NAME:
+        g_value_set_string(value, filter->cacheName);
+        break;
+    case PROP_START:
+        g_value_set_boolean(value, filter->started);
+        break;
+    case PROP_MULTI_PARAM:
+        param = zrtp_getMultiStrParams(filter->zrtpCtx, &len);
+        if (param == NULL) {
+            g_value_set_boxed(value, g_byte_array_new()); /* Return empty byte array */
             break;
-        case PROP_LOCAL_SSRC:
-            g_value_set_uint(value, filter->localSSRC);
-            break;
-        case PROP_MITM_MODE:
-            g_value_set_boolean(value, filter->mitmMode);
-            break;
-        case PROP_CACHE_NAME:
-            g_value_set_string(value, filter->cacheName);
-            break;
-        case PROP_START:
-            g_value_set_boolean(value, filter->started);
-            break;
-        case PROP_MULTI_PARAM:
-            param = zrtp_getMultiStrParams(filter->zrtpCtx, &len);
-            if (param == NULL) {
-                g_value_set_boxed(value, g_byte_array_new()); /* Return empty byte array */
-                break;
-            }
-            /* Copy data to a Glib byte array to enable the application to simply free the data */
-            GByteArray* mspArr = g_byte_array_sized_new(len);
-            mspArr = g_byte_array_append(mspArr, param, len);
-            g_value_set_boxed(value, mspArr);
-            filter->gotMultiParam = TRUE;
+        }
+        /* Copy data to a Glib byte array to enable the application to simply free the data */
+        GByteArray* mspArr = g_byte_array_sized_new(len);
+        mspArr = g_byte_array_append(mspArr, param, len);
+        g_value_set_boxed(value, mspArr);
+        filter->gotMultiParam = TRUE;
 
-            /* Free the param data after copying - data was allocated by C wrapper with malloc*/
-            free(param);
-            break;
-        case PROP_IS_MULTI:
-            g_value_set_boolean(value, zrtp_isMultiStream(filter->zrtpCtx));
-            break;
-        case PROP_MULTI_AVAILABLE:
-            g_value_set_boolean(value, zrtp_isMultiStreamAvailable(filter->zrtpCtx));
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-            break;
+        /* Free the param data after copying - data was allocated by C wrapper with malloc*/
+        free(param);
+        break;
+    case PROP_IS_MULTI:
+        g_value_set_boolean(value, zrtp_isMultiStream(filter->zrtpCtx));
+        break;
+    case PROP_MULTI_AVAILABLE:
+        g_value_set_boolean(value, zrtp_isMultiStreamAvailable(filter->zrtpCtx));
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        break;
     }
 }
 
@@ -741,7 +893,7 @@ gst_zrtp_filter_chain_rtp_up (GstPad* pad, GstBuffer* gstBuf)
                 zrtp->unprotect_err = 0;
             } else {
                 if (rc == -1) {
-                   g_signal_emit(zrtp, gst_zrtp_filter_signals[SIGNAL_STATUS], 0, zrtp_Warning, zrtp_WarningSRTPauthError);
+                    g_signal_emit(zrtp, gst_zrtp_filter_signals[SIGNAL_STATUS], 0, zrtp_Warning, zrtp_WarningSRTPauthError);
                 } else {
                     g_signal_emit(zrtp, gst_zrtp_filter_signals[SIGNAL_STATUS], 0, zrtp_Warning, zrtp_WarningSRTPreplayError);
                 }
@@ -923,16 +1075,16 @@ zrtpfilter_init (GstPlugin * zrtpfilter)
  * exchange the string 'Template zrtpfilter' with your zrtpfilter description
  */
 GST_PLUGIN_DEFINE (
-    GST_VERSION_MAJOR,
-    GST_VERSION_MINOR,
-    "zrtpfilter",
-    "Template zrtpfilter",
-    zrtpfilter_init,
-    VERSION,
-    "LGPL",
-    "GStreamer",
-    "http://gstreamer.net/"
-)
+                   GST_VERSION_MAJOR,
+                   GST_VERSION_MINOR,
+                   "zrtpfilter",
+                   "Template zrtpfilter",
+                   zrtpfilter_init,
+                   VERSION,
+                   "LGPL",
+                   "GStreamer",
+                   "http://gstreamer.net/"
+                   )
 
 /*
  * Support functions to set various flags and control the ZRTP engine
@@ -1266,10 +1418,10 @@ void zrtp_srtpSecretsOff(ZrtpContext* ctx, int32_t part)
         zrtp->srtcpSend = NULL;
     }
     if (part == ForReceiver) {
-         zsrtp_DestroyWrapper(zrtp->srtpReceive);
-         zsrtp_DestroyWrapperCtrl(zrtp->srtcpReceive);
-         zrtp->srtpReceive = NULL;
-         zrtp->srtcpReceive = NULL;
+        zsrtp_DestroyWrapper(zrtp->srtpReceive);
+        zsrtp_DestroyWrapperCtrl(zrtp->srtcpReceive);
+        zrtp->srtpReceive = NULL;
+        zrtp->srtcpReceive = NULL;
     }
     g_signal_emit(zrtp, gst_zrtp_filter_signals[SIGNAL_SECURITY_OFF], 0);
 }
@@ -1343,18 +1495,17 @@ void zrtp_zrtpInformEnrollment(ZrtpContext* ctx, int32_t info)
 static
 void zrtp_signSAS(ZrtpContext* ctx, char* sas)
 {
-//     GstZrtpFilter *zrtp = GST_ZRTPFILTER (ctx->userData);
-//
-//     g_print ("signSAS: sas: %s\n", sas);
-//
+    //     GstZrtpFilter *zrtp = GST_ZRTPFILTER (ctx->userData);
+    //
+    //     g_print ("signSAS: sas: %s\n", sas);
+    //
 }
 
 static
 gint32 zrtp_checkSASSignature(ZrtpContext* ctx, char* sas)
 {
-//     GstZrtpFilter *zrtp = GST_ZRTPFILTER (ctx->userData);
-//
-//     g_print ("checkAsaSignature: sas: %s\n", sas);
+    //     GstZrtpFilter *zrtp = GST_ZRTPFILTER (ctx->userData);
+    //
+    //     g_print ("checkAsaSignature: sas: %s\n", sas);
     return 0;
 }
-

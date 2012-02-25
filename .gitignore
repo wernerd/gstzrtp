@@ -1,0 +1,16 @@
+build/
+autoconf/
+doc/html/
+zrtp/
+*.o
+*.lo
+*.la
+*.authors
+*.kdev4
+*.deps
+*.libs
+*.pc
+*.spec
+*.dat
+*~
+.kdev_include_paths
