@@ -134,7 +134,17 @@ zrtp_statusInfo (GstElement *element, gint severity, gint subCode, gpointer data
 
 static void
 zrtp_negotiationFail (GstElement *element, gint severity, gint subCode, gpointer data)  {
-    g_print("ZRTP status severe message: %s\n", SevereCodes[subCode]);
+    static GType severeType = 0;
+    gpointer klass = NULL;
+
+    if (!severeType) {
+        severeType = g_type_from_name("GstZrtpSevere");
+    }
+    klass = g_type_class_ref(severeType);
+    g_print("ZRTP negotiation failed: %s - %s\n", g_enum_get_value(klass, subCode)->value_name,
+            g_enum_get_value(klass, subCode)->value_nick);
+    g_type_class_unref(klass);
+
 }
 
 static void
