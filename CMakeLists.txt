@@ -62,6 +62,9 @@ endif()
 
 # gstreamer-rtp config includes all required lib, above check not needed
 pkg_check_modules(GST_RTP gstreamer-rtp-0.10>=${GST_REQUIRED})
+if (NOT GST_RTP_FOUND)
+     MESSAGE(FATAL_ERROR "No GST_RTP packet found (check for gstreamer-rtp).")
+endif()
 link_directories(${GST_RTP_LIBRARY_DIRS})
 add_definitions(${GST_RTP_CFLAGS})
 set(LIBS ${LIBS} ${GST_RTP_LDFLAGS} ${GST_RTP_LIBRARIES})
@@ -74,14 +77,16 @@ endif()
 
 pkg_check_modules(OPENSSL libcrypto>=0.9.8)
 if (OPENSSL_FOUND)
+    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} ${OPENSSL_INCLUDE_DIRS}) #update include files search directory
     check_include_files(openssl/bn.h HAVE_OPENSSL_BN_H)
     check_include_files(openssl/aes.h HAVE_OPENSSL_AES_H)
     check_include_files(openssl/sha.h HAVE_OPENSSL_SHA_H)
-    check_library_exists(crypto EVP_CipherInit_ex "" HAVE_SSL_CRYPT)
+    check_library_exists(crypto EVP_CipherInit_ex "${OPENSSL_LIBDIR}" HAVE_SSL_CRYPT) #use search lib directory from pkg-config
     set(LIBS ${LIBS} -lcrypto)
     set(CRYPTOBACKEND "libcrypto >= 0.9.8")
     set(BUILD_REQ "libopenssl-devel >= 0.9.8")
     set(PACKAGE_REQ "libopenssl >= 0.9.8")
+    include_directories(${OPENSSL_INCLUDE_DIRS}) #update includes directory from pkg-configure_file
 else()
     message(FATAL_ERROR "No crypto library found")
 endif()
@@ -99,7 +104,7 @@ if (NOT EXISTS ${zrtpSrcs}/ZRtp.cpp)
    MESSAGE(FATAL_ERROR "No ZRTP sources found in: ${zrtpSrcs}.")
 endif()
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR} 
+include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR} 
                     ${CMAKE_CURRENT_SOURCE_DIR}/src
                     ${zrtpSrcs} ${srtpSrcs} ${srtpSrcs}/crypto)
 
