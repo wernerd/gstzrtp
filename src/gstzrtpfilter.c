@@ -49,36 +49,43 @@
  * upstream plugin, usually a RTP plugin. 
  * 
  * The ZRTP filter monitors the data packets it receives via its receiver sinks
- * and checks if they belong to the ZRTP protocol. If this is the case the filter 
- * forwards these packets to the ZRTP protocol engine and discards them after 
- * being processed by the ZRTP protocol engine.
+ * and checks if they belong to the ZRTP protocol. The filter
+ * forwards ZRTP packets to the ZRTP protocol engine and discards them after
+ * the ZRTP packets were processed.
  * 
- * If the data packets do not belong to ZRTP the filter checks if these are RTP 
- * or RTCP packets (depending on the input sink) and if this is the case it checks 
- * if SRTP or SRTCP is active for the RTP/RTCP packets. ZRTP filter uses the SSRC 
- * to check this. If SRTP/SRTCP is active the filter calls SRTP/SRTCP to decrypt 
- * the packets and then forwards the packets to the upstream plugin.
+ * Data packets that do not belong to ZRTP are either RTP or RTCP packets
+ * (depending on the input sink) and the filter checks if SRTP or SRTCP is active.
+ * If this is the case the filter calls SRTP/SRTCP unprotect functions to decrypt
+ * the packets. If the unprotect functions do not return an error the filter
+ * forwards the decrypted packets to the upstream plugin.
  * 
- * The ZRTP filter checks data packets it gets via its send sinks if these packets
- * are valid RTP/RTCP packets. If this is the case it then checks if SRTP/SRTCP is 
- * active for the SSRC. If yes then the filter calls SRTP/SRTCP to encrypt the 
- * packets before it forwards the packets to the downstream plugin.
+ * The ZRTP filter protects (encrypts) data packets it gets via its send sinks if
+ * if SRTP/SRTCP is active. If yes then the filter calls SRTP/SRTCP protect
+ * functions before it forwards the packets to the send plugin.
  *
  * <refsect2>
  * <title>Example launch line</title>
  * |[
- * gst-launch --gst-plugin-path=$HOME/devhome/gstZrtp/build/src -m \
- *   zrtpfilter name=zrtp cache-name=gstZrtpCache.dat initialize=true \
- *   udpsrc port=5004 ! zrtp.recv_rtp_sink zrtp.recv_rtp_src ! \
- *       fakesink dump=true sync=false async=false \
- *   udpsrc port=5005 ! zrtp.recv_rtcp_sink zrtp.recv_rtcp_src ! \
- *       fakesink dump=true sync=false async=false \
+ * gst-launch me/gstZrtp/build/src zrtpfilter name=zrtp cache-name=gstZrtpCache.dat initialize=true \
+ *   udpsrc port=5004 ! zrtp.recv_rtp_sink zrtp.recv_rtp_src ! fakesink dump=true sync=false async=false \
+ *   udpsrc port=5005 ! zrtp.recv_rtcp_sink zrtp.recv_rtcp_src ! fakesink dump=true sync=false async=false \
  *   zrtptester name=testsrc \
- *   testsrc.src ! zrtp.send_rtp_sink zrtp.send_rtp_src ! \
- *       udpsink clients="127.0.0.1:5002" sync=false async=false \
- *   testsrc.rtcp_src ! zrtp.send_rtcp_sink zrtp.send_rtcp_src ! \
- *       udpsink clients="127.0.0.1:5003" sync=false async=false
- * ]| Test pipe
+ *   testsrc.src ! zrtp.send_rtp_sink zrtp.send_rtp_src ! udpsink clients="127.0.0.1:5002" sync=false async=false \
+ *   testsrc.rtcp_src ! zrtp.send_rtcp_sink zrtp.send_rtcp_src ! udpsink clients="127.0.0.1:5003" sync=false async=false
+ * ]|
+ * This filter receives data from its peer at ports 5004 and 5005 (RTP and RTCP) and
+ * sends data to its peer on ports 5002 and 5003 (RTP and RTCP). The filter uses the RTP
+ * ports (5002 and 5004) to send and receive ZRTP data. ZRTP does not use the RTCP ports.
+ * <para/>
+ * <note>
+ * <para>
+ *   The ZRTP property @initialize should be always the last property to set
+ *   for the zrtpfilter otherwise the ZRTP cache file name is not recognized.
+ *   Processing the initialize property also checks and opens the ZRTP cache. If
+ *   the cache name property is not set the ZRTP filter uses the default
+ *   file name "$HOME/.GNUccRTP.zid"
+ * </para>
+ * </note>
  * </refsect2>
  */
 
@@ -492,29 +499,29 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
     gobject_class->set_property = gst_zrtp_filter_set_property;
     gobject_class->get_property = gst_zrtp_filter_get_property;
 
-    g_object_class_install_property (gobject_class, PROP_ENABLE_ZRTP,
-                                     g_param_spec_boolean ("enable", "Enable", "Enable ZRTP processing.",
-                                                           FALSE, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_ENABLE_ZRTP,
+                                    g_param_spec_boolean ("enable", "Enable", "Enable ZRTP processing.",
+                                                          FALSE, G_PARAM_READWRITE));
 
-    g_object_class_install_property (gobject_class, PROP_LOCAL_SSRC,
-                                     g_param_spec_uint("local-ssrc", "LocalSSRC", "Set local SSRC if it cannot be determined.",
-                                                       1, 0xffffffff, 1, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_LOCAL_SSRC,
+                                    g_param_spec_uint("local-ssrc", "LocalSSRC", "Set local SSRC if it cannot be determined.",
+                                                      1, 0xffffffff, 1, G_PARAM_READWRITE));
 
-    g_object_class_install_property (gobject_class, PROP_MITM_MODE,
-                                     g_param_spec_boolean ("set-mitm-mode", "MITM", "Enable MitM (PBX) enrollment.",
-                                                           FALSE, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_MITM_MODE,
+                                    g_param_spec_boolean ("set-mitm-mode", "MITM", "Enable MitM (PBX) enrollment.",
+                                                          FALSE, G_PARAM_READWRITE));
 
-    g_object_class_install_property (gobject_class, PROP_CACHE_NAME,
-                                     g_param_spec_string("cache-name", "Cache", "ZRTP cache filename.",
-                                                         NULL, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_CACHE_NAME,
+                                    g_param_spec_string("cache-name", "Cache", "ZRTP cache filename.",
+                                                        NULL, G_PARAM_READWRITE));
 
-    g_object_class_install_property (gobject_class, PROP_INITALIZE,
-                                     g_param_spec_boolean ("initialize", "Initialize", "Initialize ZRTP engine and enable.",
-                                                           FALSE, G_PARAM_WRITABLE));
+    g_object_class_install_property(gobject_class, PROP_INITALIZE,
+                                    g_param_spec_boolean ("initialize", "Initialize", "Initialize ZRTP engine and enable.",
+                                                          FALSE, G_PARAM_WRITABLE));
 
-    g_object_class_install_property (gobject_class, PROP_START,
-                                     g_param_spec_boolean ("start", "Start", "Start ZRTP engine explicitly.",
-                                                           FALSE, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_START,
+                                    g_param_spec_boolean ("start", "Start", "Start ZRTP engine explicitly.",
+                                                          FALSE, G_PARAM_READWRITE));
 
     /* Don't stop manually, will be done when GStreamer calls the finalize function.'
      *    g_object_class_install_property (gobject_class, PROP_STOP,
@@ -522,20 +529,20 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
      *                                    FALSE, G_PARAM_WRITABLE));
      */
 
-    g_object_class_install_property (gobject_class, PROP_MULTI_PARAM,
-                                     g_param_spec_boxed("multi-param", "Multiparam", "Get or Set multi-stream parameters.",
-                                                        G_TYPE_BYTE_ARRAY, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_MULTI_PARAM,
+                                    g_param_spec_boxed("multi-param", "Multiparam", "Get or Set multi-stream parameters.",
+                                                       G_TYPE_BYTE_ARRAY, G_PARAM_READWRITE));
 
-    g_object_class_install_property (gobject_class, PROP_IS_MULTI,
-                                     g_param_spec_boolean("is-multi", "IsMulti", "Check if this is a multi-stream session.",
-                                                          FALSE, G_PARAM_READABLE));
+    g_object_class_install_property(gobject_class, PROP_IS_MULTI,
+                                    g_param_spec_boolean("is-multi", "IsMulti", "Check if this is a multi-stream session.",
+                                                         FALSE, G_PARAM_READABLE));
 
-    g_object_class_install_property (gobject_class, PROP_MULTI_AVAILABLE,
-                                     g_param_spec_boolean("multi-available", "MultiAvailable",
-                                                          "Check if master session supports multi-stream mode.",
+    g_object_class_install_property(gobject_class, PROP_MULTI_AVAILABLE,
+                                    g_param_spec_boolean("multi-available", "MultiAvailable",
+                                                         "Check if master session supports multi-stream mode.",
                                                           FALSE, G_PARAM_READABLE));
     /**
-     * zrtpfilter::status:
+     * GstZrtpFilter::status:
      * @zrtpfilter: the zrtpfilter instance
      * @severity: the sevrity of the status information
      * @subcode: information subcode
@@ -543,12 +550,12 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
      * This signal gets emitted when ZRTP calls send_info callback.
      */
     gst_zrtp_filter_signals[SIGNAL_STATUS] =
-        g_signal_new ("status", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-                      G_STRUCT_OFFSET (GstZrtpFilterClass, sendInfo), NULL, NULL,
-                      marshal_VOID__INT_INT, G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
+        g_signal_new("status", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET (GstZrtpFilterClass, status), NULL, NULL,
+                     marshal_VOID__INT_INT, G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
 
     /**
-     * zrtpfilter::sas:
+     * GstZrtpFilter::sas:
      * @zrtpfilter: the zrtpfilter instance
      * @sas: the sas string
      * @verified: boolean, true if SAS was verfied in a previous session, false otherwise
@@ -556,16 +563,19 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
      * This signal gets emitted when ZRTP calls secretsOn callback.
      */
     gst_zrtp_filter_signals[SIGNAL_SAS] =
-        g_signal_new ("sas", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-                      G_STRUCT_OFFSET (GstZrtpFilterClass, sas), NULL, NULL,
-                      marshal_VOID__STRING_INT, G_TYPE_NONE, 2, G_TYPE_STRING, G_TYPE_INT);
+        g_signal_new("sas", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET (GstZrtpFilterClass, sas), NULL, NULL,
+                     marshal_VOID__STRING_INT, G_TYPE_NONE, 2, G_TYPE_STRING, G_TYPE_INT);
 
     /**
-     * zrtpfilter::algorithm:
+     * GstZrtpFilter::algorithm:
      * @zrtpfilter: the zrtpfilter instance
      * @algorithm: the human readabe negotiated enryption and authentication algorithms
      *
      * This signal gets emitted when ZRTP calls secretsOn callback.
+     *
+     * The the application receives a copy of the @algorithm string and may use @g_free to
+     * deallocate it.
      */
     gst_zrtp_filter_signals[SIGNAL_ALGORITHM] =
         g_signal_new("algorithm", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
@@ -573,7 +583,7 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
                      g_cclosure_marshal_VOID__STRING, G_TYPE_NONE, 1, G_TYPE_STRING);
 
     /**
-     * zrtpfilter::secure-off:
+     * GstZrtpFilter::secure-off:
      * @zrtpfilter: the zrtpfilter instance
      *
      * This signal gets emitted when ZRTP calls secretsOff callback.
@@ -584,7 +594,7 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
                      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
     /**
-     * zrtpfilter::negotiation:
+     * GstZrtpFilter::negotiation:
      * @zrtpfilter: the zrtpfilter instance
      * @severity: the sevrity of the fail information
      * @subcode: information subcode
@@ -597,7 +607,7 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
                      marshal_VOID__INT_INT, G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
 
     /**
-     * zrtpfilter::not-support:
+     * GstZrtpFilter::not-supported:
      * @zrtpfilter: the zrtpfilter instance
      *
      * This signal gets emitted when ZRTP calls not supported callback.
@@ -606,9 +616,9 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
         g_signal_new("not-supported", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
                      G_STRUCT_OFFSET (GstZrtpFilterClass, noSupport), NULL, NULL,
                      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
-    
+
     /**
-     * zrtpfilter::ask-enrollment:
+     * GstZrtpFilter::ask-enrollment:
      * @zrtpfilter: the zrtpfilter instance
      * @info: the enrollment information code
      *
@@ -620,7 +630,7 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
                      g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
     /**
-     * zrtpfilter::inform-enrollment:
+     * GstZrtpFilter::inform-enrollment:
      * @zrtpfilter: the zrtpfilter instance
      * @info: the enrollment information code
      *
@@ -632,7 +642,7 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
                      g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
     /*
-     * zrtpfilter::sign-sas: - not yet implemented
+     * GstZrtpFilter::sign-sas: - not yet implemented
      * @zrtpfilter: the zrtpfilter instance
      * @info: the enrollment information code
      *
@@ -644,7 +654,7 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
     //       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
     /*
-     * zrtpfilter::check-sas-sign: - not yet implemented
+     * GstZrtpFilter::check-sas-sign: - not yet implemented
      * @zrtpfilter: the zrtpfilter instance
      * @info: the enrollment information code
      *
@@ -654,7 +664,7 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
     //       g_signal_new("check-sas-sign", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
     //       G_STRUCT_OFFSET (GstZrtpFilterClass, sasCheckSign), NULL, NULL,
     //       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
-    
+
     /* Install enums and make them available for applications */
     GST_TYPE_ZRTP_FILTER_MSG_SEVERITY;
     GST_TYPE_ZRTP_FILTER_INFO;
@@ -960,7 +970,7 @@ gst_zrtp_filter_chain_rtp_up (GstPad* pad, GstBuffer* gstBuf)
 static GstFlowReturn
 gst_zrtp_filter_chain_rtp_down (GstPad * pad, GstBuffer* gstBuf)
 {
-    GstZrtpFilter *zrtp = GST_ZRTPFILTER (GST_OBJECT_PARENT(pad));
+    GstZrtpFilter *zrtp = GST_ZRTPFILTER(GST_OBJECT_PARENT(pad));
     GstFlowReturn rc = GST_FLOW_ERROR;
 
     if (zrtp->localSSRC == 0) {
@@ -1481,7 +1491,7 @@ void zrtp_zrtpAskEnrollment(ZrtpContext* ctx, int32_t info)
 {
     GstZrtpFilter *zrtp = GST_ZRTPFILTER (ctx->userData);
 
-    g_signal_emit (zrtp, gst_zrtp_filter_signals[SIGNAL_ASK_ENROLL], 0, info);
+    g_signal_emit(zrtp, gst_zrtp_filter_signals[SIGNAL_ASK_ENROLL], 0, info);
 }
 
 static

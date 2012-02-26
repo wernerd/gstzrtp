@@ -3,21 +3,26 @@
 #include <sys/socket.h>
 
 /*
- * This small demo program shows how to setup and use a RTP - ZRTP receive
- * only pipeline. Even if it is a receive-only RTP this program also sets
- * up a UDP sink and connects it to the other test program. The ZRTP protocol
- * needs a sender and receiver to run the key neotiation protocol.
+ * This small demo program shows how to setup and use a RTP - ZRTP send pipeline.
+ *
+ * The ZRTP protocol always needs a sender and receiver to run the key negotiation protocol.
  *
  * In GStreamer gst-launch pipe notation:
  *
- * gst-launch - zrtpfilter name=zrtp cache-name=gstZrtpCache.dat local-ssrc=0xdeadbeef initialize=true \
- *    udpsrc port=5002 ! zrtp.recv_rtp_sink zrtp.recv_rtp_src ! fakesink dump=true sync=false async=false \
- *    udpsrc port=5003 ! zrtp.recv_rtcp_sink zrtp.recv_rtcp_src ! fakesink dump=true sync=false async=false \
- *    zrtp.send_rtp_src ! udpsink port=5002 clients="127.0.0.1:5004" sync=false async=false
+ * gst-launch me/gstZrtp/build/src zrtpfilter name=zrtp cache-name=gstZrtpCache.dat initialize=true \
+ *   udpsrc port=5004 ! zrtp.recv_rtp_sink zrtp.recv_rtp_src ! fakesink dump=true sync=false async=false \
+ *   udpsrc port=5005 ! zrtp.recv_rtcp_sink zrtp.recv_rtcp_src ! fakesink dump=true sync=false async=false \
+ *   zrtptester name=testsrc \
+ *   testsrc.src ! zrtp.send_rtp_sink zrtp.send_rtp_src ! udpsink clients="127.0.0.1:5002" sync=false async=false \
+ *   testsrc.rtcp_src ! zrtp.send_rtcp_sink zrtp.send_rtcp_src ! udpsink clients="127.0.0.1:5003" sync=false async=false
  *
- * IMPORTANT: the ZRTP property "initialize" must be the last property to set
- *            otherwise the ZRTP cache file name is not recognized. Processing
- *            the initialize property also checks and opens the ZRTP cache. If
+ * This filter receives data from its peer at ports 5004 and 5005 (RTP and RTCP) and
+ * sends data to its peer on ports 5002 and 5003 (RTP and RTCP). The filter uses the RTP
+ * ports (5002 and 5004) to send and receive ZRTP data. ZRTP does not use the RTCP ports.
+ * 
+ * IMPORTANT: the ZRTP property "initialize" should be always the last property to set
+ *            for the zrtpfilter otherwise the ZRTP cache file name is not recognized.
+ *            Processing the initialize property also checks and opens the ZRTP cache. If
  *            the cache name property is not set the ZRTP filter uses the default
  *            file name "$HOME/.GNUccRTP.zid"
  */

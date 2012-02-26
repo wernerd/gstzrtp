@@ -19,4 +19,5 @@ tmpl.stamp
 xml
 inspect-registry.*
 *.bak
+generateDoc.sh
 *~

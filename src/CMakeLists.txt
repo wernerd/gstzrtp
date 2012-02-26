@@ -88,6 +88,9 @@ set(LIBRARY_BUILD_TYPE SHARED)
 add_library(gstzrtp ${LIBRARY_BUILD_TYPE} ${gstzrtp_src})
 set_target_properties(gstzrtp PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
 target_link_libraries(gstzrtp ${LIBS})
+# add_custom_command(TARGET gstzrtp POST_BUILD
+#                   COMMAND "${PROJECT_SOURCE_DIR}/doc/generateDoc.sh"
+#                   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doc)
 
 install(TARGETS gstzrtp DESTINATION ${LIBDIRNAME})
 

@@ -20,8 +20,10 @@ set (VERSION 0.10.0)
 set (SOVERSION 0)
 set (PACKAGE zrtpfilter)
 
-set (GST_REQUIRED 0.10.16)
-set (GSTPB_REQUIRED 0.10.16)
+# The GStreamer package and version that this filter requires
+set(GST_REQUIRED 0.10.16)
+set(GST_PACKAGE gstreamer-rtp-0.10)
+
 
 # build the test driver plugin
 set(BUILD_TESTER TRUE)
@@ -61,7 +63,7 @@ endif()
 # set(LIBS ${LIBS} ${GST_LDFLAGS} ${GST_LIBRARIES})
 
 # gstreamer-rtp config includes all required lib, above check not needed
-pkg_check_modules(GST_RTP gstreamer-rtp-0.10>=${GST_REQUIRED})
+pkg_check_modules(GST_RTP ${GST_PACKAGE}>=${GST_REQUIRED})
 if (NOT GST_RTP_FOUND)
      MESSAGE(FATAL_ERROR "No GST_RTP packet found (check for gstreamer-rtp).")
 endif()
@@ -97,6 +99,12 @@ check_include_files(string.h HAVE_STRING_H)
 # necessary and required modules checked, ready to generate config.h
 configure_file(config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
+# Configure shell script to generate the documentation
+set(ZRTP_LIB_FILE ${CMAKE_CURRENT_BINARY_DIR}/src)
+set(ZRTP_SRC_DIR ${PROJECT_SOURCE_DIR}/src)
+configure_file(${PROJECT_SOURCE_DIR}/doc/generateDoc.sh.cmake ${PROJECT_SOURCE_DIR}/doc/generateDoc.sh @ONLY)
+execute_process(COMMAND chmod +x  ${PROJECT_SOURCE_DIR}/doc/generateDoc.sh WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doc)
+
 set(zrtpSrcs ${PROJECT_SOURCE_DIR}/zrtp/src)
 set(srtpSrcs ${PROJECT_SOURCE_DIR}/zrtp/srtp)
 
@@ -119,4 +127,3 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(demo)
-

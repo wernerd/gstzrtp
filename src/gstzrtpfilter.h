@@ -212,6 +212,7 @@ typedef enum {
     zrtp_UnsuppHashType =    0x51,
     zrtp_UnsuppCiphertype =  0x52,
     zrtp_UnsuppPKExchange =  0x53,
+    zrtp_UnsuppSRTPAuthTag = 0x54,
     zrtp_UnsuppSASScheme =   0x55,
     zrtp_NoSharedSecret =    0x56,
     zrtp_DHErrorWrongPV =    0x61,
@@ -318,7 +319,7 @@ struct _GstZrtpFilterClass
 
     /*< public >*/
     /* signals */
-    void (*sendInfo)(GstElement *element, gint severity, gint subcode);
+    void (*status)(GstElement *element, gint severity, gint subcode);
     void (*sas)(GstElement *element, gchar* sas, gint verified);
     void (*algorithm)(GstElement *element, gchar* algo);
     void (*secureOff)(GstElement *element);
