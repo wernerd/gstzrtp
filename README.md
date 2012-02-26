@@ -37,14 +37,14 @@ to the connected up- or downstream plugins.
 
 ## Building
 
-__NOTE: this is a pre-alpha version for testing only!__
+__NOTE: This is a beta version for for testing and start production coding!__
 
 The only prerequisits the build GStreamer ZRTP are:
 
 - openSSL development environment
 - a C and C++ compiler (tested with gcc and g++)
 - installed GStreamer base including development environment. Make sure you
-  have also gstreamer-rtp installed.
+  have also gstreamer-rtp package installed.
 - This plugin uses `cmake` to generate the build files.
 
 The use `git clone` to get the sources from github and change into the gstZrtp
@@ -66,14 +66,23 @@ Now create a build directoy and create the build scripts:
     cmake ..
 
 Just call `make` as usual to build the shared library for the plugin. `cmake`
-places this library in the `src` subdirectory und us can use it, for example
-with gst-launch:
+places this library in the `build/src` subdirectory und us can use it, for
+example with gst-launch:
 
     gst-launch --gst-plugin-path=/your/path/gstZrtp/build/src ...
 
 
 ## Some documentation
 
-The ZRTP sources contain a lot of documentation, the _zrtpfilter_ plugin will
-have it also once it is in a more stable state and the interface to
-applications is defined. Stay tuned.
+The _zrtpfilter_ plugin contains gtkdoc compliant documentation. To create the
+documentation change to the `doc` directory and run the shell script
+`generateDoc.sh`. The `cmake` call (see above) generates this script and you
+can use it after you built the plugin. As usualy gtkdoc places the
+documentation in the `html` subdrirectory. Use your browser and open the
+_index.html_ file. 
+
+
+## Demo programs and sources
+
+The `demo` directory contains some programs that show how to use _zrtpfilter_
+in various configurations.
