@@ -25,11 +25,11 @@ set(skein_srcs
 
 set(openssl_src_srtp
     ${srtpSrcs}/crypto/openssl/hmac.cpp
-    ${srtpSrcs}/crypto/openssl/AesSrtp.cpp)
+    ${srtpSrcs}/crypto/openssl/SrtpSymCrypto.cpp)
 
 set(gcrypt_src_srtp
     ${srtpSrcs}/crypto/gcrypt/gcrypthmac.cpp
-    ${srtpSrcs}/crypto/gcrypt/gcryptAesSrtp.cpp
+    ${srtpSrcs}/crypto/gcrypt/gcryptSrtpSymCrypto.cpp
     ${srtpSrcs}/crypto/gcrypt/InitializeGcrypt.cpp)
 
 
