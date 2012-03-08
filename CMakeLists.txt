@@ -114,7 +114,7 @@ endif()
 
 include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR} 
                     ${CMAKE_CURRENT_SOURCE_DIR}/src
-                    ${zrtpSrcs} ${srtpSrcs} ${srtpSrcs}/crypto)
+                    ${zrtpSrcs} ${zrtpSrcs}/libzrtpcpp ${srtpSrcs} ${srtpSrcs}/crypto)
 
 add_definitions(-g -O2 -fno-strict-aliasing)
 if(CMAKE_COMPILER_IS_GNUCXX)
