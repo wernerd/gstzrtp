@@ -236,8 +236,8 @@ static void zrtp_synchEnter(ZrtpContext* ctx) ;
 static void zrtp_synchLeave(ZrtpContext* ctx) ;
 static void zrtp_zrtpAskEnrollment(ZrtpContext* ctx, int32_t info) ;
 static void zrtp_zrtpInformEnrollment(ZrtpContext* ctx, int32_t info) ;
-static void zrtp_signSAS(ZrtpContext* ctx, char* sas) ;
-static int32_t zrtp_checkSASSignature(ZrtpContext* ctx, char* sas) ;
+static void zrtp_signSAS(ZrtpContext* ctx, guint8* sas) ;
+static int32_t zrtp_checkSASSignature(ZrtpContext* ctx, guint8* sas) ;
 
 /* The callback function structure for ZRTP */
 static zrtp_Callbacks c_callbacks = {
@@ -646,24 +646,24 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
      * @zrtpfilter: the zrtpfilter instance
      * @info: the enrollment information code
      *
-     * This signal gets emitted when ZRTP calls askEnrollment callback.
+     * This signal gets emitted when ZRTP calls signSAS callback.
      */
     //   gst_zrtp_filter_signals[SIGNAL_SIGN_SAS] =
     //       g_signal_new("sign-sas", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
     //       G_STRUCT_OFFSET (GstZrtpFilterClass, signSas), NULL, NULL,
-    //       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
+    //       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_uint8_pointer);
 
     /*
      * GstZrtpFilter::check-sas-sign: - not yet implemented
      * @zrtpfilter: the zrtpfilter instance
      * @info: the enrollment information code
      *
-     * This signal gets emitted when ZRTP calls askEnrollment callback.
+     * This signal gets emitted when ZRTP calls sasCheckSign callback.
      */
     //   gst_zrtp_filter_signals[SIGNAL_CHECK_SAS_SIGN] =
     //       g_signal_new("check-sas-sign", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
     //       G_STRUCT_OFFSET (GstZrtpFilterClass, sasCheckSign), NULL, NULL,
-    //       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
+    //       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_uint8_pointer);
 
     /* Install enums and make them available for applications */
     GST_TYPE_ZRTP_FILTER_MSG_SEVERITY;
@@ -1503,7 +1503,7 @@ void zrtp_zrtpInformEnrollment(ZrtpContext* ctx, int32_t info)
 }
 
 static
-void zrtp_signSAS(ZrtpContext* ctx, char* sas)
+void zrtp_signSAS(ZrtpContext* ctx, guint8* sas)
 {
     //     GstZrtpFilter *zrtp = GST_ZRTPFILTER (ctx->userData);
     //
@@ -1512,7 +1512,7 @@ void zrtp_signSAS(ZrtpContext* ctx, char* sas)
 }
 
 static
-gint32 zrtp_checkSASSignature(ZrtpContext* ctx, char* sas)
+gint32 zrtp_checkSASSignature(ZrtpContext* ctx, guint8* sas)
 {
     //     GstZrtpFilter *zrtp = GST_ZRTPFILTER (ctx->userData);
     //

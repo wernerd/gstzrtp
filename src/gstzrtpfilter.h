@@ -327,8 +327,8 @@ struct _GstZrtpFilterClass
     void (*noSupport)(GstElement *element);
     void (*askEnroll)(GstElement *element, gint info);
     void (*informEnroll)(GstElement *element, gint info);
-    void (*signSas)(GstElement *element, gchar* sasSign);
-    void (*checkSasSign)(GstElement *element, gchar* checkSign);
+    void (*signSas)(GstElement *element, guint8* sasSign);
+    void (*checkSasSign)(GstElement *element, guint8* checkSign);
 };
 
 GType gst_zrtp_filter_get_type (void);
