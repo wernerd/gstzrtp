@@ -1,87 +1,120 @@
+set (sdes_src ${zrtpSrcs}/zrtp/ZrtpSdesStream.cpp)
 
-set(gcrypt_src
-    ${zrtpSrcs}/libzrtpcpp/crypto/gcrypt/gcryptZrtpDH.cpp
-    ${zrtpSrcs}/libzrtpcpp/crypto/gcrypt/gcrypthmac256.cpp
-    ${zrtpSrcs}/libzrtpcpp/crypto/gcrypt/gcryptsha256.cpp
-    ${zrtpSrcs}/libzrtpcpp/crypto/gcrypt/gcrypthmac384.cpp
-    ${zrtpSrcs}/libzrtpcpp/crypto/gcrypt/gcryptsha384.cpp
-    ${zrtpSrcs}/libzrtpcpp/crypto/gcrypt/gcryptAesCFB.cpp
-    ${zrtpSrcs}/libzrtpcpp/crypto/gcrypt/InitializeGcrypt.cpp)
+set(zrtp_src_no_cache
+    ${zrtpSrcs}/zrtp/ZrtpCallbackWrapper.cpp
+    ${zrtpSrcs}/zrtp/ZRtp.cpp
+    ${zrtpSrcs}/zrtp/ZrtpCrc32.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketCommit.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketConf2Ack.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketConfirm.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketDHPart.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketGoClear.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketClearAck.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketHelloAck.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketHello.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketError.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketErrorAck.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketPingAck.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketPing.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketSASrelay.cpp
+    ${zrtpSrcs}/zrtp/ZrtpPacketRelayAck.cpp
+    ${zrtpSrcs}/zrtp/ZrtpStateClass.cpp
+    ${zrtpSrcs}/zrtp/ZrtpTextData.cpp
+    ${zrtpSrcs}/zrtp/ZrtpConfigure.cpp
+    ${zrtpSrcs}/zrtp/ZrtpCWrapper.cpp
+    ${zrtpSrcs}/zrtp/Base32.cpp)
+#    ${zrtpSrcs}/common/osSpecifics.c)
 
-set(openssl_src
-    ${zrtpSrcs}/libzrtpcpp/crypto/openssl/ZrtpDH.cpp
-    ${zrtpSrcs}/libzrtpcpp/crypto/openssl/hmac256.cpp
-    ${zrtpSrcs}/libzrtpcpp/crypto/openssl/sha256.cpp
-    ${zrtpSrcs}/libzrtpcpp/crypto/openssl/hmac384.cpp
-    ${zrtpSrcs}/libzrtpcpp/crypto/openssl/sha384.cpp
-    ${zrtpSrcs}/libzrtpcpp/crypto/openssl/AesCFB.cpp
-    ${zrtpSrcs}/libzrtpcpp/crypto/openssl/InitializeOpenSSL.cpp)
-
-set(skein_srcs
-    ${srtpSrcs}/crypto/macSkein.cpp
-    ${srtpSrcs}/crypto/skein.c
-    ${srtpSrcs}/crypto/skein_block.c
-    ${srtpSrcs}/crypto/skeinApi.c)
-
-set(openssl_src_srtp
-    ${srtpSrcs}/crypto/openssl/hmac.cpp
-    ${srtpSrcs}/crypto/openssl/SrtpSymCrypto.cpp)
-
-set(gcrypt_src_srtp
-    ${srtpSrcs}/crypto/gcrypt/gcrypthmac.cpp
-    ${srtpSrcs}/crypto/gcrypt/gcryptSrtpSymCrypto.cpp
-    ${srtpSrcs}/crypto/gcrypt/InitializeGcrypt.cpp)
-
-
-if (GCRYPT_FOUND)
-    set(crypto_src ${gcrypt_src} ${gcrypt_src_srtp})
-endif()
 
 if (OPENSSL_FOUND)
-    set(crypto_src ${openssl_src} ${openssl_src_srtp})
+    set(crypto_src
+        ${zrtpSrcs}/zrtp/crypto/openssl/zrtpDH.cpp
+        ${zrtpSrcs}/zrtp/crypto/openssl/hmac256.cpp
+        ${zrtpSrcs}/zrtp/crypto/openssl/sha256.cpp
+        ${zrtpSrcs}/zrtp/crypto/openssl/hmac384.cpp
+        ${zrtpSrcs}/zrtp/crypto/openssl/sha384.cpp
+        ${zrtpSrcs}/zrtp/crypto/openssl/aesCFB.cpp
+        ${zrtpSrcs}/zrtp/crypto/openssl/InitializeOpenSSL.cpp
+        ${zrtpSrcs}/zrtp/crypto/twoCFB.cpp)
+
+     set(crypto_src_srtp
+        ${zrtpSrcs}/srtp/crypto/openssl/hmac.cpp
+        ${zrtpSrcs}/srtp/crypto/openssl/SrtpSymCrypto.cpp)
+
 endif()
 
-set(twofish_srcs 
-    ${zrtpSrcs}/libzrtpcpp/crypto/twofish.c
-    ${zrtpSrcs}/libzrtpcpp/crypto/twofish_cfb.c
-    ${zrtpSrcs}/libzrtpcpp/crypto/TwoCFB.cpp)
+# in standalone mode we need bignumber lib and crypto primitives
+if (CRYPTO_STANDALONE)
+    set(crypto_src
+        ${zrtpSrcs}/cryptcommon/ZrtpRandom.cpp
+        ${zrtpSrcs}/common/Thread.cpp
+        ${zrtpSrcs}/common/MutexClass.cpp
+        ${zrtpSrcs}/common/EventClass.cpp
+        ${zrtpSrcs}/srtp/crypto/sha1.c
+        ${zrtpSrcs}/bnlib/bn00.c
+        ${zrtpSrcs}/bnlib/lbn00.c
+        ${zrtpSrcs}/bnlib/bn.c
+        ${zrtpSrcs}/bnlib/lbnmem.c
+        ${zrtpSrcs}/bnlib/sieve.c
+        ${zrtpSrcs}/bnlib/prime.c
+        ${zrtpSrcs}/bnlib/bnprint.c
+        ${zrtpSrcs}/bnlib/jacobi.c
+        ${zrtpSrcs}/bnlib/germain.c
+        ${zrtpSrcs}/bnlib/ec/ec.c
+        ${zrtpSrcs}/bnlib/ec/ecdh.c
+        ${zrtpSrcs}/bnlib/bnprint.c
+        ${zrtpSrcs}/zrtp/crypto/zrtpDH.cpp
+        ${zrtpSrcs}/zrtp/crypto/hmac256.cpp
+        ${zrtpSrcs}/zrtp/crypto/sha256.cpp
+        ${zrtpSrcs}/zrtp/crypto/hmac384.cpp
+        ${zrtpSrcs}/zrtp/crypto/sha384.cpp
+        ${zrtpSrcs}/zrtp/crypto/aesCFB.cpp
+        ${zrtpSrcs}/zrtp/crypto/twoCFB.cpp
+        ${zrtpSrcs}/zrtp/crypto/sha2.c)
 
-set(zrtp_src
-    ${zrtpSrcs}/ZrtpCallbackWrapper.cpp
-    ${zrtpSrcs}/ZIDFile.cpp
-    ${zrtpSrcs}/ZIDRecord.cpp
-    ${zrtpSrcs}/ZRtp.cpp
-    ${zrtpSrcs}/ZrtpCrc32.cpp
-    ${zrtpSrcs}/ZrtpPacketCommit.cpp
-    ${zrtpSrcs}/ZrtpPacketConf2Ack.cpp
-    ${zrtpSrcs}/ZrtpPacketConfirm.cpp
-    ${zrtpSrcs}/ZrtpPacketDHPart.cpp
-    ${zrtpSrcs}/ZrtpPacketGoClear.cpp
-    ${zrtpSrcs}/ZrtpPacketClearAck.cpp
-    ${zrtpSrcs}/ZrtpPacketHelloAck.cpp
-    ${zrtpSrcs}/ZrtpPacketHello.cpp
-    ${zrtpSrcs}/ZrtpPacketError.cpp
-    ${zrtpSrcs}/ZrtpPacketErrorAck.cpp
-    ${zrtpSrcs}/ZrtpPacketPingAck.cpp
-    ${zrtpSrcs}/ZrtpPacketPing.cpp
-    ${zrtpSrcs}/ZrtpPacketSASrelay.cpp
-    ${zrtpSrcs}/ZrtpPacketRelayAck.cpp
-    ${zrtpSrcs}/ZrtpStateClass.cpp
-    ${zrtpSrcs}/ZrtpTextData.cpp
-    ${zrtpSrcs}/ZrtpConfigure.cpp
-    ${zrtpSrcs}/ZrtpCWrapper.cpp
-    ${zrtpSrcs}/Base32.cpp)
+    set(crypto_src_srtp
+        ${zrtpSrcs}/srtp/crypto/hmac.cpp
+        ${zrtpSrcs}/srtp/crypto/SrtpSymCrypto.cpp
+        ${zrtpSrcs}/srtp/crypto/sha1.c)
+
+endif()
+
+set(cryptcommon_srcs
+    ${zrtpSrcs}/cryptcommon/twofish.c
+    ${zrtpSrcs}/cryptcommon/twofish_cfb.c
+    ${zrtpSrcs}/cryptcommon/aescrypt.c
+    ${zrtpSrcs}/cryptcommon/aeskey.c
+    ${zrtpSrcs}/cryptcommon/aestab.c
+    ${zrtpSrcs}/cryptcommon/aes_modes.c
+    ${zrtpSrcs}/cryptcommon/macSkein.cpp
+    ${zrtpSrcs}/cryptcommon/skein.c
+    ${zrtpSrcs}/cryptcommon/skein_block.c
+    ${zrtpSrcs}/cryptcommon/skeinApi.c)
+
+if (NOT enable_sqlite)
+    set(zrtp_src ${zrtp_src_no_cache}
+        ${zrtpSrcs}/zrtp/ZIDCacheFile.cpp
+        ${zrtpSrcs}/zrtp/ZIDRecordFile.cpp)
+else()
+    set(zrtp_src ${zrtp_src_no_cache}
+        ${zrtpSrcs}/zrtp/ZIDCacheDb.cpp
+        ${zrtpSrcs}/zrtp/ZIDRecordDb.cpp
+        ${zrtpSrcs}/zrtp/zrtpB64Encode.c
+        ${zrtpSrcs}/zrtp/zrtpB64Decode.c
+        ${zrtpSrcs}/zrtp/zrtpCacheSqliteBackend.c)
+
+endif()
+
 
 set(srtp_src
-    ${srtpSrcs}/CryptoContext.cpp
-    ${srtpSrcs}/CryptoContextCtrl.cpp
-)
-
+    ${zrtpSrcs}/srtp/CryptoContext.cpp
+    ${zrtpSrcs}/srtp/CryptoContextCtrl.cpp
+    ${crypto_src_srtp})
 
 set(filter_src
     gstzrtpfilter.c gstSrtpCWrapper.cpp)
 
-set(gstzrtp_src ${zrtp_src} ${ccrtp_src} ${crypto_src} ${twofish_srcs} ${skein_srcs} ${srtp_src} ${filter_src})
+set(gstzrtp_src ${zrtp_src} ${crypto_src} ${cryptcommon_srcs} ${srtp_src} ${filter_src})
 
 set(LIBRARY_BUILD_TYPE SHARED)
 

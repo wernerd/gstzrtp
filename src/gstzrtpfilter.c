@@ -958,7 +958,7 @@ gst_zrtp_filter_chain_rtp_up (GstPad* pad, GstBuffer* gstBuf)
         zrtp->peerSSRC = g_ntohl(zrtp->peerSSRC);
         // If ZRTP engine was initialized and set up but not started these packets are ignored
         // by the state engine.
-        zrtp_processZrtpMessage(zrtp->zrtpCtx, zrtpMsg, zrtp->peerSSRC);
+        zrtp_processZrtpMessage(zrtp->zrtpCtx, zrtpMsg, zrtp->peerSSRC, GST_BUFFER_SIZE(gstBuf));
     }
     gst_buffer_unref(gstBuf);
     return GST_FLOW_OK;
