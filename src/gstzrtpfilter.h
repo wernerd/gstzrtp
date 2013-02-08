@@ -2,7 +2,7 @@
  * GStreamer
  * Copyright (C) 2005 Thomas Vander Stichele <thomas@apestaart.org>
  * Copyright (C) 2005 Ronald S. Bultje <rbultje@ronald.bitfreak.net>
- * Copyright (C) 2012 werner <<user@hostname.org>>
+ * Copyright (C) 2012 werner <Werner.Dittmann@t-online.de>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -54,14 +54,14 @@
 
 G_BEGIN_DECLS
 
-/* Ugly workaround: gtk-doc sees this but don't use it it actual
+/* Ugly workaround: gtk-doc sees this but don't use it to actual
  * compile to avoid synchroinzation problems with libzrtpcpp includes.
  */
 #if 0
 /*
  * IMPORTANT: keep the following enums in synch with ZrtpCodes. We copy them here
  * to avoid any C++ header includes and defines. The protocol states are located
- * ZrtpStateClass.h .
+ * in ZrtpStateClass.h .
  */
 /**
  * zrtp_MessageSeverity:
@@ -247,14 +247,14 @@ typedef enum {
 /* #defines don't like whitespacey bits */
 #define GST_TYPE_ZRTPFILTER \
 (gst_zrtp_filter_get_type())
-#define GST_ZRTPFILTER(obj) \
-(G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_ZRTPFILTER,GstZrtpFilter))
-#define GST_ZRTPFILTER_CLASS(klass) \
-(G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_ZRTPFILTER,GstZrtpFilterClass))
-#define GST_IS_ZRTPFILTER(obj) \
-(G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_ZRTPFILTER))
-#define GST_IS_ZRTPFILTER_CLASS(klass) \
-(G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_ZRTPFILTER))
+
+#define GST_ZRTPFILTER(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_ZRTPFILTER,GstZrtpFilter))
+
+#define GST_ZRTPFILTER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_ZRTPFILTER,GstZrtpFilterClass))
+
+#define GST_IS_ZRTPFILTER(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_ZRTPFILTER))
+
+#define GST_IS_ZRTPFILTER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_ZRTPFILTER))
 
 typedef struct _GstZrtpFilter      GstZrtpFilter;
 typedef struct _GstZrtpFilterClass GstZrtpFilterClass;

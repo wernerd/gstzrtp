@@ -213,8 +213,8 @@ static GstFlowReturn gst_zrtp_filter_chain_rtcp_up   (GstPad * pad, GstBuffer * 
 static GstFlowReturn gst_zrtp_filter_chain_rtcp_down (GstPad * pad, GstBuffer * buf);
 
 /*                                     1
-                                       1234567890123456   */
-static gchar clientId[] =    "GST ZRTP 2.1.0  ";
+                              1234567890123456   */
+static gchar clientId[] =    "GST ZRTP 3.0.0  ";
 
 static gboolean zrtp_initialize(GstZrtpFilter* filter, const gchar *zidFilename, gboolean autoEnable);
 static void zrtp_filter_startZrtp(GstZrtpFilter *zrtp);
@@ -903,13 +903,15 @@ gst_zrtp_filter_chain_rtp_up (GstPad* pad, GstBuffer* gstBuf)
                 zrtp->unprotect_err = 0;
             } else {
                 if (rc == -1) {
+                    GST_WARNING_OBJECT(zrtp, "SRTP Authentication check failed.");
                     g_signal_emit(zrtp, gst_zrtp_filter_signals[SIGNAL_STATUS], 0, zrtp_Warning, zrtp_WarningSRTPauthError);
                 } else {
+                    GST_WARNING_OBJECT(zrtp, "SRTP Replay check failed.");
                     g_signal_emit(zrtp, gst_zrtp_filter_signals[SIGNAL_STATUS], 0, zrtp_Warning, zrtp_WarningSRTPreplayError);
                 }
                 zrtp->unprotect_err = rc;
                 gst_buffer_unref(gstBuf);
-                rc = GST_FLOW_ERROR;
+                rc = GST_FLOW_OK;
             }
         }
         if (!zrtp->started && zrtp->enableZrtp)
