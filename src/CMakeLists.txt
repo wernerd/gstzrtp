@@ -22,8 +22,8 @@ set(zrtp_src_no_cache
     ${zrtpSrcs}/zrtp/ZrtpTextData.cpp
     ${zrtpSrcs}/zrtp/ZrtpConfigure.cpp
     ${zrtpSrcs}/zrtp/ZrtpCWrapper.cpp
-    ${zrtpSrcs}/zrtp/Base32.cpp)
-#    ${zrtpSrcs}/common/osSpecifics.c)
+    ${zrtpSrcs}/zrtp/Base32.cpp
+    ${zrtpSrcs}/common/osSpecifics.c)
 
 
 if (OPENSSL_FOUND)
