@@ -41,7 +41,8 @@ __NOTE: This is a beta version for for testing and start production coding!__
 
 The only prerequisits the build GStreamer ZRTP are:
 
-- openSSL development environment
+- openSSL development environment (optional, see CRYPTO_STANDALONE variable
+  in `CMakeLists.txt`)
 - a C and C++ compiler (tested with gcc and g++)
 - installed GStreamer base including development environment. Make sure you
   have also gstreamer-rtp package installed.
@@ -51,11 +52,11 @@ The use `git clone` to get the sources from github and change into the gstZrtp
 directory. Before starting to build you need to get the ZRTP and SRTP sources:
 
     sh getzrtp.sh
-    
+
 This script clones the current ZRTP/SRTP source repository (also on github)
 into the _zrtp_ subdirectory. If this subdirectory already exists it checks if
 it contains a Git repository and updates the sources with `git pull`. The
-build process uses thes sources and puts the compiles objects into the
+build process uses these sources and puts the compiled objects into the
 _zrtpfilter_ shared library. This avoids a dependcy to the standard ZRTP
 library and is more inline with GStreamer's binary-only plugin concept.
 
