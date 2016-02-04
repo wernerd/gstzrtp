@@ -1,6 +1,6 @@
 #!/bin/sh
 if ! test -d zrtp; then
-    git clone git://github.com/wernerd/ZRTPCPP.git zrtp
+    git clone https://github.com/wernerd/ZRTPCPP.git zrtp
 else
     cd zrtp
     if ! test -d .git; then
