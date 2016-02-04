@@ -199,7 +199,12 @@ static GstStaticPadTemplate zrtp_send_rtp_src_template =
                              );
 
 
+#if GST_CHECK_VERSION(1,0,0)
+#define gst_zrtp_filter_parent_class parent_class
+G_DEFINE_TYPE(GstZrtpFilter, gst_zrtp_filter, GST_TYPE_ELEMENT)
+#else
 GST_BOILERPLATE (GstZrtpFilter, gst_zrtp_filter, GstElement, GST_TYPE_ELEMENT);
+#endif
 
 static void gst_zrtp_filter_finalize (GObject * object);
 static void gst_zrtp_filter_set_property (GObject * object, guint prop_id, const GValue * value, GParamSpec * pspec);
@@ -207,10 +212,18 @@ static void gst_zrtp_filter_get_property (GObject * object, guint prop_id, GValu
 
 // static gboolean gst_zrtp_filter_set_caps (GstPad * pad, GstCaps * caps);
 
+#if GST_CHECK_VERSION(1,0,0)
+static GstFlowReturn gst_zrtp_filter_chain_rtp_up    (GstPad * pad, GstObject * parent, GstBuffer * buf);
+static GstFlowReturn gst_zrtp_filter_chain_rtp_down  (GstPad * pad, GstObject * parent, GstBuffer * buf);
+static GstFlowReturn gst_zrtp_filter_chain_rtcp_up   (GstPad * pad, GstObject * parent, GstBuffer * buf);
+static GstFlowReturn gst_zrtp_filter_chain_rtcp_down (GstPad * pad, GstObject * parent, GstBuffer * buf);
+#else
 static GstFlowReturn gst_zrtp_filter_chain_rtp_up    (GstPad * pad, GstBuffer * buf);
 static GstFlowReturn gst_zrtp_filter_chain_rtp_down  (GstPad * pad, GstBuffer * buf);
 static GstFlowReturn gst_zrtp_filter_chain_rtcp_up   (GstPad * pad, GstBuffer * buf);
 static GstFlowReturn gst_zrtp_filter_chain_rtcp_down (GstPad * pad, GstBuffer * buf);
+#endif
+
 
 /*                                     1
                               1234567890123456   */
@@ -495,6 +508,10 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
     gobject_class = (GObjectClass *) klass;
     //    gstelement_class = (GstElementClass *) klass;
 
+#if GST_CHECK_VERSION(1,0,0)
+    gst_zrtp_filter_base_init(klass);
+#endif
+
     gobject_class->finalize = gst_zrtp_filter_finalize;
     gobject_class->set_property = gst_zrtp_filter_set_property;
     gobject_class->get_property = gst_zrtp_filter_get_property;
@@ -679,8 +696,13 @@ gst_zrtp_filter_class_init(GstZrtpFilterClass * klass)
  * set pad calback functions
  * initialize instance structure
  */
+#if GST_CHECK_VERSION(1,0,0)
+static void
+gst_zrtp_filter_init(GstZrtpFilter * filter)
+#else
 static void
 gst_zrtp_filter_init(GstZrtpFilter * filter, GstZrtpFilterClass * gclass)
+#endif
 {
     /* At first initialize the non-pad stuff  */
     /* Create the empty wrapper */
@@ -694,6 +716,7 @@ gst_zrtp_filter_init(GstZrtpFilter * filter, GstZrtpFilterClass * gclass)
     filter->localSSRC = 0;
     filter->peerSSRC = 0;
     filter->gotMultiParam = FALSE;
+    filter->masterCtx = NULL;
 
     // TODO: caps setter, getter checks?
     // Initialize the receive (upstream) RTP data path
@@ -755,7 +778,7 @@ gst_zrtp_filter_set_property (GObject* object, guint prop_id,
     GstZrtpFilter *filter = GST_ZRTPFILTER (object);
     GByteArray* mspArr;
 
-    GST_DEBUG_OBJECT(filter, "set property '%s', value: ", g_param_spec_get_name(pspec));
+    GST_DEBUG_OBJECT(filter, "set property '%s'", g_param_spec_get_name(pspec));
     switch (prop_id) {
     case PROP_ENABLE_ZRTP:
         filter->enableZrtp = g_value_get_boolean(value);
@@ -787,12 +810,16 @@ gst_zrtp_filter_set_property (GObject* object, guint prop_id,
         */
     case PROP_MULTI_PARAM:
         mspArr = g_value_get_boxed(value);
+        g_memmove(&filter->masterCtx, mspArr->data, sizeof(filter->masterCtx));
         if (filter->gotMultiParam) {
             GST_ERROR_OBJECT(filter, "Cannot set multi-stream parameters on master ZRTP session.\n");
             break;
         }
+
         GST_DEBUG("%p, length: %d", mspArr->data, mspArr->len);
-        zrtp_setMultiStrParams(filter->zrtpCtx, (char*)mspArr->data, mspArr->len);
+        filter->masterCtx = (ZrtpContext*)mspArr->data;
+        zrtp_setMultiStrParams(filter->zrtpCtx, (char*)(mspArr->data + sizeof(filter->masterCtx)),
+                               mspArr->len - (int32_t)sizeof(filter->masterCtx), filter->masterCtx );
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -831,13 +858,16 @@ gst_zrtp_filter_get_property (GObject * object, guint prop_id,
             break;
         }
         /* Copy data to a Glib byte array to enable the application to simply free the data */
-        GByteArray* mspArr = g_byte_array_sized_new(len);
+        /* The data also contains the master ZrtpContext address. It's required in setMultiStreamParams. */
+        ZrtpContext* ctxPointer = filter->zrtpCtx;
+        GByteArray* mspArr = g_byte_array_sized_new(len + sizeof(ctxPointer));
+        mspArr = g_byte_array_append(mspArr, (guint8 *)&ctxPointer, sizeof(ctxPointer));
         mspArr = g_byte_array_append(mspArr, param, len);
         g_value_set_boxed(value, mspArr);
         filter->gotMultiParam = TRUE;
 
         /* Free the param data after copying - data was allocated by C wrapper with malloc*/
-        free(param);
+        g_free(param);
         break;
     case PROP_IS_MULTI:
         g_value_set_boolean(value, zrtp_isMultiStream(filter->zrtpCtx));
@@ -881,12 +911,28 @@ gst_zrtp_filter_finalize (GObject* object)
 /* chain function - rtp upstream, from UDP to RTP session
  * this function does the actual processing
  */
+#if GST_CHECK_VERSION(1,0,0)
+static GstFlowReturn
+gst_zrtp_filter_chain_rtp_up (GstPad* pad, GstObject* parent, GstBuffer* gstBuf)
+{
+    GstZrtpFilter* zrtp = GST_ZRTPFILTER (parent);
+    GstFlowReturn rc = GST_FLOW_ERROR;
+    GstMapInfo mapInfo;
+    guint8* buffer;
+    gsize bufsize;
+
+    g_warn_if_fail(gst_buffer_map(gstBuf, &mapInfo, GST_MAP_READ));
+    buffer = mapInfo.data;
+    bufsize = mapInfo.size;
+#else
 static GstFlowReturn
 gst_zrtp_filter_chain_rtp_up (GstPad* pad, GstBuffer* gstBuf)
 {
     GstZrtpFilter* zrtp = GST_ZRTPFILTER (GST_OBJECT_PARENT (pad));
-    guint8* buffer = GST_BUFFER_DATA(gstBuf);
     GstFlowReturn rc = GST_FLOW_ERROR;
+    guint8* buffer = GST_BUFFER_DATA(gstBuf);
+    gsize bufsize = GST_BUFFER_SIZE(gstBuf);
+#endif
 
     // check if this could be a real RTP/SRTP packet.
     if ((*buffer & 0xf0) != 0x10) {
@@ -914,6 +960,9 @@ gst_zrtp_filter_chain_rtp_up (GstPad* pad, GstBuffer* gstBuf)
                 rc = GST_FLOW_OK;
             }
         }
+#if GST_CHECK_VERSION(1,0,0)
+        gst_buffer_unmap(gstBuf, &mapInfo);
+#endif
         if (!zrtp->started && zrtp->enableZrtp)
             zrtp_filter_startZrtp(zrtp);
         return rc;
@@ -926,7 +975,7 @@ gst_zrtp_filter_chain_rtp_up (GstPad* pad, GstBuffer* gstBuf)
      */
     if (zrtp->enableZrtp && zrtp->zrtpCtx != NULL) {
         // Get CRC value into crc (see above how to compute the offset)
-        gint temp = GST_BUFFER_SIZE(gstBuf) - CRC_SIZE;
+        gint temp = bufsize - CRC_SIZE;
         guint32 crc = *(guint32*)(buffer + temp);
         crc = g_ntohl(crc);
 
@@ -936,6 +985,9 @@ gst_zrtp_filter_chain_rtp_up (GstPad* pad, GstBuffer* gstBuf)
 
         // Check if it is really a ZRTP packet, return, no further processing
         if (magic != ZRTP_MAGIC || zrtp->zrtpCtx == NULL) {
+#if GST_CHECK_VERSION(1,0,0)
+            gst_buffer_unmap(gstBuf, &mapInfo);
+#endif
             gst_buffer_unref(gstBuf);
             return GST_FLOW_ERROR;
         }
@@ -960,8 +1012,11 @@ gst_zrtp_filter_chain_rtp_up (GstPad* pad, GstBuffer* gstBuf)
         zrtp->peerSSRC = g_ntohl(zrtp->peerSSRC);
         // If ZRTP engine was initialized and set up but not started these packets are ignored
         // by the state engine.
-        zrtp_processZrtpMessage(zrtp->zrtpCtx, zrtpMsg, zrtp->peerSSRC, GST_BUFFER_SIZE(gstBuf));
+        zrtp_processZrtpMessage(zrtp->zrtpCtx, zrtpMsg, zrtp->peerSSRC, bufsize);
     }
+#if GST_CHECK_VERSION(1,0,0)
+    gst_buffer_unmap(gstBuf, &mapInfo);
+#endif
     gst_buffer_unref(gstBuf);
     return GST_FLOW_OK;
 }
@@ -969,14 +1024,28 @@ gst_zrtp_filter_chain_rtp_up (GstPad* pad, GstBuffer* gstBuf)
 /* chain function - rtp downstream, from RTP session to UDP
  * this function does the actual processing
  */
+#if GST_CHECK_VERSION(1,0,0)
+static GstFlowReturn
+gst_zrtp_filter_chain_rtp_down (GstPad * pad, GstObject* parent, GstBuffer* gstBuf)
+{
+    GstZrtpFilter *zrtp = GST_ZRTPFILTER(parent);
+#else
 static GstFlowReturn
 gst_zrtp_filter_chain_rtp_down (GstPad * pad, GstBuffer* gstBuf)
 {
     GstZrtpFilter *zrtp = GST_ZRTPFILTER(GST_OBJECT_PARENT(pad));
+#endif
     GstFlowReturn rc = GST_FLOW_ERROR;
 
     if (zrtp->localSSRC == 0) {
+#if GST_CHECK_VERSION(1,0,0)
+        GstRTPBuffer rtp = GST_RTP_BUFFER_INIT;
+        gst_rtp_buffer_map(gstBuf, GST_MAP_READ, &rtp);
+        zrtp->localSSRC = gst_rtp_buffer_get_ssrc(&rtp);   /* Learn own SSRC before starting ZRTP */
+        gst_rtp_buffer_unmap(&rtp);
+#else
         zrtp->localSSRC = gst_rtp_buffer_get_ssrc(gstBuf);   /* Learn own SSRC before starting ZRTP */
+#endif
     }
 
     if (!zrtp->started && zrtp->enableZrtp) {
@@ -1005,10 +1074,17 @@ gst_zrtp_filter_chain_rtp_down (GstPad * pad, GstBuffer* gstBuf)
 /* chain function - rtcp upstream, from UDP to RTP session
  * this function does the actual processing
  */
+#if GST_CHECK_VERSION(1,0,0)
+static GstFlowReturn
+gst_zrtp_filter_chain_rtcp_up (GstPad * pad, GstObject* parent, GstBuffer* gstBuf)
+{
+    GstZrtpFilter *zrtp = GST_ZRTPFILTER (parent);
+#else
 static GstFlowReturn
 gst_zrtp_filter_chain_rtcp_up (GstPad * pad, GstBuffer* gstBuf)
 {
     GstZrtpFilter *zrtp = GST_ZRTPFILTER (GST_OBJECT_PARENT(pad));
+#endif
     GstFlowReturn rc = GST_FLOW_ERROR;
 
     if (zrtp->srtcpReceive == NULL) {
@@ -1031,10 +1107,17 @@ gst_zrtp_filter_chain_rtcp_up (GstPad * pad, GstBuffer* gstBuf)
 /* chain function - rtcp downstream, from RTP session to UDP
  * this function does the actual processing
  */
+#if GST_CHECK_VERSION(1,0,0)
+static GstFlowReturn
+gst_zrtp_filter_chain_rtcp_down (GstPad * pad, GstObject* parent, GstBuffer* gstBuf)
+{
+    GstZrtpFilter *zrtp = GST_ZRTPFILTER (parent);
+#else
 static GstFlowReturn
 gst_zrtp_filter_chain_rtcp_down (GstPad * pad, GstBuffer* gstBuf)
 {
     GstZrtpFilter *zrtp = GST_ZRTPFILTER (GST_OBJECT_PARENT (pad));
+#endif
     GstFlowReturn rc = GST_FLOW_ERROR;
 
     if (zrtp->srtcpSend == NULL) {
@@ -1089,7 +1172,11 @@ zrtpfilter_init (GstPlugin * zrtpfilter)
 GST_PLUGIN_DEFINE (
                    GST_VERSION_MAJOR,
                    GST_VERSION_MINOR,
+#if GST_CHECK_VERSION(1,0,0)
+                   zrtpfilter,
+#else
                    "zrtpfilter",
+#endif
                    "Template zrtpfilter",
                    zrtpfilter_init,
                    VERSION,
@@ -1157,6 +1244,9 @@ gint32 zrtp_sendDataZRTP(ZrtpContext* ctx, const uint8_t* data, int32_t length)
     guint32 crc;
     guint16* pus;
     guint32* pui;
+#if GST_CHECK_VERSION(1,0,0)
+    GstMapInfo mapInfo;
+#endif
 
     if ((totalLen) > MAX_ZRTP_SIZE)
         return 0;
@@ -1164,7 +1254,14 @@ gint32 zrtp_sendDataZRTP(ZrtpContext* ctx, const uint8_t* data, int32_t length)
     /* TODO: check to use gst_pad_alloc_buffer ()
      */
     GstBuffer* gstBuf = gst_buffer_new_and_alloc(totalLen);
+#if GST_CHECK_VERSION(1,0,0)
+    guint8* buffer;
+
+    g_warn_if_fail(gst_buffer_map(gstBuf,&mapInfo, GST_MAP_READWRITE));
+    buffer = mapInfo.data;
+#else
     guint8* buffer = GST_BUFFER_DATA(gstBuf);
+#endif
 
     /* Get some handy pointers */
     pus = (guint16*)buffer;
@@ -1187,6 +1284,9 @@ gint32 zrtp_sendDataZRTP(ZrtpContext* ctx, const uint8_t* data, int32_t length)
     /* convert and store CRC in ZRTP packet.*/
     crc = zrtp_EndCksum(crc);
     *(guint32*)(buffer+totalLen-CRC_SIZE) = g_htonl(crc);
+#if GST_CHECK_VERSION(1,0,0)
+    gst_buffer_unmap(gstBuf, &mapInfo);
+#endif
 
     GST_TRACE_OBJECT(zrtp, "Send ZRTP packet downstream.");
     /* Send the ZRTP packet using the downstream plugin */
@@ -1203,7 +1303,11 @@ gint32 zrtp_activateTimer(ZrtpContext* ctx, int32_t time)
 
     zrtp->clockId = gst_clock_new_single_shot_id(zrtp->sysclock, timeout*GST_MSECOND);
 
+#if GST_CHECK_VERSION(1,0,0)
+    /*GstClockReturn ret =*/ gst_clock_id_wait_async(zrtp->clockId, &timer_callback, zrtp, NULL);
+#else
     /*GstClockReturn ret =*/ gst_clock_id_wait_async(zrtp->clockId, &timer_callback, zrtp);
+#endif
 
     return 1;
 }

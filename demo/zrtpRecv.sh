@@ -1,3 +1,3 @@
 #!/bin/sh
-../build/demo/zrtpRecv --gst-plugin-path=../build/src
+build/Debug/zrtpRecv --gst-plugin-path=build/Debug   # --gst-debug=zrtpfilter:6
 

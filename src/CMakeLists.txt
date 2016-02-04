@@ -23,6 +23,7 @@ set(zrtp_src_no_cache
     ${zrtpSrcs}/zrtp/ZrtpConfigure.cpp
     ${zrtpSrcs}/zrtp/ZrtpCWrapper.cpp
     ${zrtpSrcs}/zrtp/Base32.cpp
+    ${zrtpSrcs}/zrtp/EmojiBase32.cpp
     ${zrtpSrcs}/common/osSpecifics.c)
 
 
@@ -63,6 +64,7 @@ if (CRYPTO_STANDALONE)
         ${zrtpSrcs}/bnlib/ec/ec.c
         ${zrtpSrcs}/bnlib/ec/ecdh.c
         ${zrtpSrcs}/bnlib/bnprint.c
+        ${zrtpSrcs}/bnlib/ec/curve25519-donna.c
         ${zrtpSrcs}/zrtp/crypto/zrtpDH.cpp
         ${zrtpSrcs}/zrtp/crypto/hmac256.cpp
         ${zrtpSrcs}/zrtp/crypto/sha256.cpp
@@ -105,6 +107,13 @@ else()
 
 endif()
 
+set(zrtp_skein
+        ${zrtpSrcs}/zrtp/crypto/skein384.cpp
+        ${zrtpSrcs}/zrtp/crypto/skein256.cpp
+        ${zrtpSrcs}/zrtp/crypto/skeinMac384.cpp
+        ${zrtpSrcs}/zrtp/crypto/skeinMac256.cpp
+        )
+
 
 set(srtp_src
     ${zrtpSrcs}/srtp/CryptoContext.cpp
@@ -114,7 +123,7 @@ set(srtp_src
 set(filter_src
     gstzrtpfilter.c gstSrtpCWrapper.cpp)
 
-set(gstzrtp_src ${zrtp_src} ${crypto_src} ${cryptcommon_srcs} ${srtp_src} ${filter_src})
+set(gstzrtp_src ${zrtp_src} ${crypto_src} ${cryptcommon_srcs} ${zrtp_skein} ${srtp_src} ${filter_src})
 
 set(LIBRARY_BUILD_TYPE SHARED)
 

@@ -6,7 +6,7 @@
  * This small demo program shows how to setup and use a RTP - ZRTP receive
  * only pipeline. Even if it is a receive-only RTP this program also sets
  * up a UDP sink and connects it to the other test program. The ZRTP protocol
- * needs a sender and receiver to run the key neotiation protocol.
+ * needs a sender and receiver to run the key negotiation protocol.
  *
  * In GStreamer gst-launch pipe notation:
  *

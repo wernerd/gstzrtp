@@ -1,3 +1,3 @@
 #!/bin/sh
-../build/demo/zrtpSend --gst-plugin-path=../build/src
+build/Debug/zrtpSend --gst-plugin-path=build/Debug
 

@@ -1,3 +1,3 @@
 #!/bin/sh
-../build/demo/zrtpRecvMulti --gst-plugin-path=../build/src
+build/Debug/zrtpRecvMulti --gst-plugin-path=build/Debug
 

@@ -21,12 +21,12 @@ set (SOVERSION 0)
 set (PACKAGE zrtpfilter)
 
 # The GStreamer package and version that this filter requires
-set(GST_REQUIRED 0.10.16)
-set(GST_PACKAGE gstreamer-rtp-0.10)
+set(GST_REQUIRED 1.0.10)
+set(GST_PACKAGE gstreamer-rtp-1.0)
 
 # Use standalone crypto module? If false try to use openSSL library
 #
-set (CRYPTO_STANDALONE false)
+set (CRYPTO_STANDALONE true)
 
 
 # build the test driver plugin
@@ -76,6 +76,8 @@ link_directories(${GST_RTP_LIBRARY_DIRS})
 add_definitions(${GST_RTP_CFLAGS})
 set(LIBS ${LIBS} ${GST_RTP_LDFLAGS} ${GST_RTP_LIBRARIES})
 
+MESSAGE(STATUS "GST include dirs ${GST_RTP_INCLUDE_DIRS}")
+
 # setup the Thread include and lib
 find_package(Threads)
 if(CMAKE_HAVE_PTHREAD_H)
@@ -112,6 +114,7 @@ else()
     check_include_files(stdint.h HAVE_STDINT_H)
     check_include_files(stdint.h HAVE_ASSERT_H)
     check_include_files(limits.h HAVE_LIMITS_H)
+    check_include_files(string.h HAVE_STRING_H)
 
     check_function_exists(memmove HAVE_MEMMOVE)
     check_function_exists(memcpy HAVE_MEMCPY)
@@ -147,9 +150,11 @@ execute_process(COMMAND chmod +x  ${PROJECT_SOURCE_DIR}/doc/generateDoc.sh WORKI
 include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src
                     ${zrtpSrcs} ${zrtpSrcs}/zrtp ${zrtpSrcs}/srtp ${zrtpSrcs}/bnlib)
 
+include_directories(${GST_RTP_INCLUDE_DIRS})
+
 add_definitions(-g -O2 -fno-strict-aliasing)
 if(CMAKE_COMPILER_IS_GNUCXX)
-  add_definitions(-Wno-long-long -Wno-char-subscripts)
+  add_definitions(-Wno-long-long -Wno-char-subscripts -std=c++11)
   add_definitions(-Wall)
   add_definitions(-DHAVE_CONFIG_H)
 endif()

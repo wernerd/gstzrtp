@@ -305,6 +305,7 @@ struct _GstZrtpFilter
     gchar* cacheName;
     gboolean gotMultiParam;
     ZrtpContext* zrtpCtx;
+    ZrtpContext* masterCtx;
     guint16 zrtpSeq;
     gboolean enableZrtp;
     gboolean started;

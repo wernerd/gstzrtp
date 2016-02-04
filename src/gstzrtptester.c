@@ -105,15 +105,24 @@ static GstStaticPadTemplate rtcp_src = GST_STATIC_PAD_TEMPLATE ("rtcp_src",
                                                                 GST_PAD_ALWAYS,
                                                                 GST_STATIC_CAPS_ANY);
 
-
+#if GST_CHECK_VERSION(1,0,0)
+#define gst_zrtptester_parent_class parent_class
+G_DEFINE_TYPE(Gstzrtptester, gst_zrtptester, GST_TYPE_ELEMENT)
+#else
 GST_BOILERPLATE (Gstzrtptester, gst_zrtptester, GstElement, GST_TYPE_ELEMENT);
+#endif
 
 static void gst_zrtptester_finalize (GObject * object);
 static void gst_zrtptester_set_property (GObject * object, guint prop_id, const GValue * value, GParamSpec * pspec);
 static void gst_zrtptester_get_property (GObject * object, guint prop_id, GValue * value, GParamSpec * pspec);
 
+#if GST_CHECK_VERSION(1,0,0)
+static gboolean gst_zrtptester_sink_event (GstPad * pad, GstObject * parent, GstEvent * event);
+static GstFlowReturn gst_zrtptester_chain (GstPad * pad, GstObject * parent, GstBuffer * buf);
+#else
 static gboolean gst_zrtptester_set_caps (GstPad * pad, GstCaps * caps);
 static GstFlowReturn gst_zrtptester_chain (GstPad * pad, GstBuffer * buf);
+#endif
 
 static GstStateChangeReturn gst_zrtptester_change_state (GstElement * element, GstStateChange transition);
 
@@ -144,6 +153,10 @@ gst_zrtptester_class_init (GstzrtptesterClass * klass)
     gobject_class = (GObjectClass *) klass;
     gstelement_class = (GstElementClass *) klass;
 
+#if GST_CHECK_VERSION(1,0,0)
+    gst_zrtptester_base_init(klass);
+#endif
+
     gobject_class->finalize = gst_zrtptester_finalize;
     gobject_class->set_property = gst_zrtptester_set_property;
     gobject_class->get_property = gst_zrtptester_get_property;
@@ -159,31 +172,50 @@ gst_zrtptester_class_init (GstzrtptesterClass * klass)
  * set pad calback functions
  * initialize instance structure
  */
+#if GST_CHECK_VERSION(1,0,0)
+static void
+gst_zrtptester_init (Gstzrtptester * filter)
+#else
 static void
 gst_zrtptester_init (Gstzrtptester * filter,
                      GstzrtptesterClass * gclass)
+#endif
 {
     filter->zrtpMutex = g_mutex_new();
     filter->start = FALSE;
     filter->sysclock = gst_system_clock_obtain();
 
     filter->sinkpad = gst_pad_new_from_static_template (&sink_factory, "sink");
+#if GST_CHECK_VERSION(1,0,0)
+    gst_pad_set_event_function (filter->sinkpad,
+                                  GST_DEBUG_FUNCPTR(gst_zrtptester_sink_event));
+    GST_PAD_SET_PROXY_CAPS(filter->sinkpad);
+#else
     gst_pad_set_setcaps_function (filter->sinkpad,
                                   GST_DEBUG_FUNCPTR(gst_zrtptester_set_caps));
     gst_pad_set_getcaps_function (filter->sinkpad,
                                   GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
+#endif
     gst_pad_set_chain_function (filter->sinkpad,
                                 GST_DEBUG_FUNCPTR(gst_zrtptester_chain));
 
     filter->srcpad = gst_pad_new_from_static_template (&src_factory, "src");
+#if GST_CHECK_VERSION(1,0,0)
+    GST_PAD_SET_PROXY_CAPS(filter->srcpad);
+#else
     gst_pad_set_getcaps_function (filter->srcpad,
                                   GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
+#endif
 
     gst_element_add_pad (GST_ELEMENT (filter), filter->sinkpad);
     gst_element_add_pad (GST_ELEMENT (filter), filter->srcpad);
 
     filter->rtcp_src = gst_pad_new_from_static_template (&rtcp_src, "rtcp_src");
+#if GST_CHECK_VERSION(1,0,0)
+    GST_PAD_SET_PROXY_CAPS(filter->rtcp_src);
+#else
     gst_pad_set_getcaps_function (filter->rtcp_src, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
+#endif
 
     gst_element_add_pad (GST_ELEMENT (filter), filter->rtcp_src);
 
@@ -240,6 +272,18 @@ gst_zrtptester_finalize (GObject* object)
 /* GstElement vmethod implementations */
 
 /* this function handles the link with other elements */
+#if GST_CHECK_VERSION(1,0,0)
+static gboolean
+gst_zrtptester_sink_event (GstPad * pad, GstObject * parent, GstEvent * event)
+{
+    if (GST_EVENT_TYPE(event) != GST_TYPE_CAPS)
+        return gst_pad_event_default (pad, parent, event);
+
+    // gst_event_parse_caps(event, &caps);
+    /* and forward */
+    return gst_pad_event_default (pad, parent, event);
+}
+#else
 static gboolean
 gst_zrtptester_set_caps (GstPad * pad, GstCaps * caps)
 {
@@ -252,16 +296,24 @@ gst_zrtptester_set_caps (GstPad * pad, GstCaps * caps)
 
     return gst_pad_set_caps (otherpad, caps);
 }
+#endif
 
 /* chain function
  * this function does the actual processing
  */
+#if GST_CHECK_VERSION(1,0,0)
+static GstFlowReturn
+gst_zrtptester_chain (GstPad * pad, GstObject * parent, GstBuffer * buf)
+{
+    Gstzrtptester *filter = GST_ZRTPTESTER (parent);
+#else
 static GstFlowReturn
 gst_zrtptester_chain (GstPad * pad, GstBuffer * buf)
 {
     Gstzrtptester *filter;
 
     filter = GST_ZRTPTESTER (GST_OBJECT_PARENT (pad));
+#endif
 
     if (filter->silent == FALSE)
         g_print ("I'm plugged, therefore I'm in.\n");
@@ -305,7 +357,11 @@ zrtptester_init (GstPlugin * zrtptester)
 GST_PLUGIN_DEFINE (
     GST_VERSION_MAJOR,
     GST_VERSION_MINOR,
+#if GST_CHECK_VERSION(1,0,0)
+    zrtptester,
+#else
     "zrtptester",
+#endif
     "Template zrtptester",
     zrtptester_init,
     VERSION,
@@ -346,7 +402,15 @@ zrtptester_thread (Gstzrtptester* zrtptester)
     GST_DEBUG_OBJECT (zrtptester, "starting at %" GST_TIME_FORMAT, GST_TIME_ARGS (current_time));
 
     GstBuffer* buf = gst_buffer_new_and_alloc(28);
+#if GST_CHECK_VERSION(1,0,0)
+    GstMapInfo mapInfo;
+    g_warn_if_fail(gst_buffer_map(buf, &mapInfo, GST_MAP_WRITE));
+
+    memcpy(mapInfo.data, rr, 28);
+    gst_buffer_unmap(buf, &mapInfo);
+#else
     memcpy(GST_BUFFER_DATA(buf), rr, 28);
+#endif
     gst_pad_push(zrtptester->rtcp_src, buf);
 
     while (zrtptester->start && zrtptester->counter < 10) {
@@ -369,10 +433,21 @@ zrtptester_thread (Gstzrtptester* zrtptester)
             break;
 
         GstBuffer* buf = gst_rtp_buffer_new_allocate (12, 0, 0);
-        gst_rtp_buffer_set_ssrc(buf, 0x01020304);
-        gst_rtp_buffer_set_seq(buf, zrtptester->counter + 1);
+#if GST_CHECK_VERSION(1,0,0)
+        GstRTPBuffer rtp = GST_RTP_BUFFER_INIT;
+        GstRTPBuffer *rtpBuf = &rtp;
 
-        gpointer payl = gst_rtp_buffer_get_payload (buf);
+        gst_rtp_buffer_map(buf, GST_MAP_READWRITE, &rtp);
+#else
+        GstBuffer* rtpBuf = buf;
+#endif
+        gst_rtp_buffer_set_ssrc(rtpBuf, 0x01020304);
+        gst_rtp_buffer_set_seq(rtpBuf, zrtptester->counter + 1);
+
+        gpointer payl = gst_rtp_buffer_get_payload (rtpBuf);
+#if GST_CHECK_VERSION(1,0,0)
+        gst_rtp_buffer_unmap(&rtp);
+#endif
 
         gchar* cp = ((zrtptester->counter & 1) == 1) ? data2 : data1;
         memcpy(payl, cp, 12);
@@ -388,13 +463,30 @@ zrtptester_thread (Gstzrtptester* zrtptester)
     GST_DEBUG("sending RTCP BYE");
 
     buf = gst_buffer_new_and_alloc(44);
+#if GST_CHECK_VERSION(1,0,0)
+    g_warn_if_fail(gst_buffer_map(buf, &mapInfo, GST_MAP_WRITE));
+    memcpy(mapInfo.data, bye, 44);
+    gst_buffer_unmap(buf, &mapInfo);
+#else
     memcpy(GST_BUFFER_DATA(buf), bye, 44);
+#endif
     gst_pad_push(zrtptester->rtcp_src, buf);
 
     buf = gst_rtp_buffer_new_allocate (12, 0, 0);
-    gst_rtp_buffer_set_ssrc(buf, 0x01020304);
-    gst_rtp_buffer_set_seq(buf, zrtptester->counter + 1);
-    memcpy(gst_rtp_buffer_get_payload (buf), "exit", 5);
+#if GST_CHECK_VERSION(1,0,0)
+    GstRTPBuffer rtp = GST_RTP_BUFFER_INIT;
+    GstRTPBuffer *rtpBuf = &rtp;
+
+    gst_rtp_buffer_map(buf, GST_MAP_READWRITE, &rtp);
+#else
+    GstBuffer* rtpBuf = buf;
+#endif
+    gst_rtp_buffer_set_ssrc(rtpBuf, 0x01020304);
+    gst_rtp_buffer_set_seq(rtpBuf, zrtptester->counter + 1);
+    memcpy(gst_rtp_buffer_get_payload (rtpBuf), "exit", 5);
+#if GST_CHECK_VERSION(1,0,0)
+    gst_rtp_buffer_unmap(&rtp);
+#endif
     gst_pad_push(zrtptester->srcpad, buf);
 
     id = zrtptester->clockId = gst_clock_new_single_shot_id (sysclock, gst_clock_get_time (sysclock) + 2000 * GST_MSECOND);
@@ -497,7 +589,7 @@ gst_zrtptester_change_state (GstElement * element, GstStateChange transition)
             break;
     }
 
-    res = parent_class->change_state (element, transition);
+    res = GST_ELEMENT_CLASS(parent_class)->change_state (element, transition);
 
     switch (transition) {
         case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
